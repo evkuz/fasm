@@ -1,0 +1,180 @@
+; experimental template
+
+format ELF executable 3
+entry start
+
+
+segment readable executable
+
+start:
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; BEXTR ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax, 0          ; dst
+mov ecx, 0xabcdef01 ; 1st Source
+mov edx, 0x0000070d ; 7 бит из позиции 13 для числа 0xabcdef01
+                    ; Bit 7:0 specifies the starting bit position of bit extraction.
+                    ; Bit 15:8 specifies the maximum number of bits (LENGTH)
+				    ; beginning at the START position to extract
+;bextr dst, start, len
+ bextr eax, ecx, edx  ; EAX = 0x6f
+ ; ecx = 0xabcdef01
+ ; edx = 0x0000070d == 7 бит из позиции 13(d) для числа 0xabcdef01
+ ; result = b'110 1111 = 0x6f
+ ;
+ ; Operation
+ ; START ← SRC2[7:0];
+ ; LEN ← SRC2[15:8];
+ ; TEMP ← ZERO_EXTEND_TO_512 (SRC1 );
+ ; DEST ← ZERO_EXTEND(TEMP[START+LEN -1: START]);
+ ; ZF ← (DEST = 0);
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; BLSI ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	mov eax, 0xabcd7abc
+	mov ecx, 0xabcd8000
+    blsi eax, ecx    ; EAX = 0x00008000
+    ; Извлекает младший установленный бит из src и устанавливает соответствущий (по позиции) 
+    ; бит в dst. Все остальные биты в dst обнуляются. Если в источнике нет установленных бит,
+    ; то приемник ВЕСЬ обнуляется и устанавливаются флаги ZF, CF.
+
+    ;Operation
+    ;temp ← (-SRC) bitwiseAND (SRC);
+	;SF ← temp[OperandSize -1];
+	;ZF ← (temp = 0);
+	;IF SRC = 0
+	;CF ← 0;
+	;ELSE
+	;CF ← 1;
+	;FI
+	;DEST ← temp;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; BLSMSK ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov eax, 0xabcd8022
+    mov ecx, 0xabcd0100
+    BLSMSK eax, ecx     ; EAX = 0x000001ff
+    ;Устанавливает младшие биты в dst в 1 вплоть до, и включая, 
+    ;позиции младшего установленного в 1 в src. Остальные биты dst обнуляет.
+ 
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  BLSR  ;;;;;;;;;;;;;;;;;;;;
+ ;BLSR копирует все биты из src в dst, обнуляет младший установленный бит.
+ ;Если src ноль, устанавливает флаг CF.  
+    mov eax, 0x11228022
+    mov ecx, 0xabcd0880
+    BLSR eax, ecx     ; EAX = 0xabcd0800
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  BZHI ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; BZHI Zero high bits starting from specified bit position.
+; Копирует биты src-1(операнд 2) в dst (операнд 1) и сбрасывает(==0) старшие биты dst
+; в соответствии с ИНдексом в src-2 (операнд 3). Значения Индекса - в битах [7:0] src-2.
+; 
+mov eax, 0x33333333
+mov ecx, 0xffffABCD
+mov ebx,7 
+BZHI eax, ecx, ebx ; EAX== 0x0000 004D
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  LZCNT     ;;;;;;;;;;;;;;;;;;;;;;;
+;LZCNT Count the number leading zero bits.
+; Вычисляет количество старших бит со значением 0 в src (операнд 2),
+; записывает результат в dst
+
+xor eax,eax
+mov ecx, 0x7ff
+LZCNT eax,ecx  ; EAX = 0x15 21 страрших бит в значении 0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MULX   ;;;;;;;;;;;
+;Выполняет беззнаковое умножение неявного операнда в EDX и явного операнда (операнд 3)
+;и сохраняет младшую половину результата в операнд 2, старшую половину в операнд 1
+;без чтения либо записи флагов. Позволяет эффективно программировать задачи, 
+;где чередуется сложение с переносом и умножение.
+; если операнд 1 и 2 одинаковые, то будет храниться только верхняя половина
+; результата.
+
+mov edx, 0x801234
+mov ecx, 0x701234
+        ;                      0x3811120B5A90
+MULX eax, ebx, ecx    ; EAX == 0x3811  EBX == 0x120B5A90
+
+
+xor eax, eax
+xor ebx, ebx
+imul edx, ecx ; Это для сравнения. Хранить только младшие 32 бита.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  PDEP   ;;;;;;;;;;;;;;;;;;;;
+;PDEP - Parallel Bits Deposit uses a mask in the second source operand (the third operand) to transfer/scatter contiguous low order bits in
+;the first source operand (the second operand) into the destination (the first operand). PDEP takes the low bits from
+;the first source operand and deposit them in the destination operand at the corresponding bit locations that are set
+;in the second source operand (mask). All other bits (bits not set in mask) in destination are set to zero.
+;
+; PDEP - берет последовательно младшие биты из операнда 2 и переносит их в операнд 1
+; в позиции, соответствующие маске (позициям) в операнде 3.
+; Позиция в маске определяет позицию в destination, т.е в dest. биты укладываются не
+; подряд, а по номеру позиции в маске.
+mov eax, 0x1A ; src-1
+mov ecx, 0x5221 ; src-2 mask
+xor edx,edx
+pdep edx, eax, ecx ; EDX == 0x5020
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    PEXT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; PEXT использует маску в операнде 3 для передачи бит из операнда 2 в смежные
+; (идущие подряд) младшие биты в операнде 1.
+; Для каждого бита, установленного в маске, PEXT извлекает биты в соответствующих
+; позициях  операнда 2 и записывает их подряд, начиная с младщих разрядов, в операнд 1.
+;  
+; Позиция в маске определяет позицию в source, в destination биты укладываются подряд.
+
+mov eax, 0xE6CE ; src-1
+mov ecx, 0x5221 ; src-2 mask
+xor edx,edx
+PEXT edx, eax, ecx ; EDX == 0x14
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    RORX  ;;;;;;;;;;;;;;;;;;;;;;;;
+; RORX сдвигает циклически вправо  операнд 2 на число в операнде 3, результат
+; записывает в операнд 1. Арифметические флаги не меняет.
+; Если в операнде 3 число больше 32, то выполняется операция [операнд 3 ] AND 0x1f
+
+mov eax, 0xE6CE ; src-1
+xor edx,edx
+RORX edx, eax, 5 ; EDX == 0x70000736
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;   SARX/SHLX/SHRX ;;;;;;;;;;;;;;;;;;
+
+mov eax, 0xE6CE 
+xor ecx, ecx
+mov ebx, 5
+SHRX ecx, eax, ebx       ; EAX ==0x0736
+
+mov eax, 0x8000E6CE      ; Сохраняет знак
+xor ecx, ecx
+mov ebx, 5
+SARX ecx, eax, ebx       ; EAX == 0xfc000736
+
+
+mov eax, 0xE6CE
+xor ecx, ecx
+mov ebx, 5
+SHLX ecx, eax, ebx       ; EAX == 0x001cd9c0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;   TZCNT  ;;;;;;;;;;;;;;;;;;;;;;;
+xor eax, eax
+mov ecx, 0xabcd0100
+
+TZCNT eax, ecx           ; EAX == 0x8
+
+xor eax, eax
+xor ecx, ecx
+
+TZCNT eax, ecx           ; EAX == 0x20 == 32
+
+
+ ;;;;;;;;;;;;;;;;;;;;;;;;; exit code
+	mov eax, 1
+	mov ebx, 42
+;	sub ebx, 29
+	int 0x80      
+
+; в терминале вводим: 
+; ./simple
+; echo $?
+; Получаем вывод 42 - наш код возврата из ebx

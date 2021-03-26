@@ -1,0 +1,12 @@
+format ELF executable 3
+entry start
+
+segment readable executable
+
+start:
+		cpuid
+exit:
+
+	mov	eax,1           ; sys_exit
+	xor	ebx,ebx         ; exit code == 0
+	int	0x80            ; Вызов прерывания

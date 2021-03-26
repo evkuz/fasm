@@ -1,0 +1,144 @@
+; 0 - либо оба “0”, либо  оба “1”
+; 1 - когда оба разные, не равны
+format ELF executable 3
+entry start
+
+segment readable executable
+
+start:
+    xor eax, eax
+    ;jmp __bswap
+	mov eax, 0xAAAAAAAA
+	mov ecx, 0xF00F00FF
+	mov edx, eax
+	xor eax, ecx
+
+    xor eax, eax
+;;;;;;;;;;;;;;;;  bsf ;;;;;;;;;;;;;;;
+    mov cx, 0x4040
+    bsf ax, cx          ; ax == 0x0006
+
+    xor eax, eax
+    xor ecx, ecx
+
+    mov cx, 0x4040
+    bsr ax, cx          ; ax == 0x000E (позиция 14 - первый установленный бит, 
+                        ; если начинать проход со старшего)
+   
+;;;;;;;;;;;;;; shl ;;;;;;;;;;;;;;;;;;;;;;;;
+    xor eax, eax
+    mov ax,0x0007
+    shl ax, 3           ; 0x0007 => 0x0038
+
+    xor eax, eax
+    mov ecx,5
+    mov ax,7            ;        5
+    shl ax,cl           ; 0x0007 <<= 0x00E0
+    sal cx,3            ; 0x0005 <<= 0x0028
+
+;;;;;;;;;;;;;; shr ;;;;;;;;;;;;;;;;;;;;;;;;
+
+    xor eax, eax
+    mov ax,0x0038
+    shr ax, 3           ;  0x0038 => 0x0007  
+
+    xor eax, eax
+    mov ecx,5
+    mov ax,0x00E0
+    shr ax,cl           ; 0x00E0 => 0x0007 
+    mov ecx, 0x0028
+    sar cx,3            ; 0x0028 => 0x0005  
+;;;;;;;;;;;;;;;;;;; shld (shift & load);;;;;;;;;;;;;;;;;;;;;
+    mov ax, 0x08CC
+    mov bx, 0x0007
+    shld ax,bx,2        ; 0x08CC => 0x2330
+
+    mov ax, 0x08CC
+    mov bx, 0xE000      ; 0x08CCE000 
+    shld ax,bx,3        ; 0x08CC => 0x4667
+
+    mov ax, 0x08CC
+    mov bx, 0xE000
+    shld ax,bx,4        ; 0x08CC => 0x8CCE
+
+    mov ax, 0x78CC
+    mov bx, 0xE000
+    shld ax,bx,3        ; 0x78CC => 0xC667
+
+    mov ax, 0x18CC
+    mov bx, 0xE000
+    shld ax,bx,3        ; 0x18CC => 0xC667
+
+
+
+;;;;;;;;;;;;;;;;;;; shrd ;;;;;;;;;;;;;;;;;;;;;
+__shrd:
+    mov ax, 0x2330      ; 7 -> 0x2330 >> 2
+    mov bx, 0x0007
+    shrd ax,bx,2        ; 0x2330 => 0xC8CC  
+
+    XOR EAX, EAX
+    XOR EBX,EBX
+    mov ax, 0x4667
+    mov bx, 0x000E
+    shrd ax,bx,3        ; 0x4667 => 0xC8CC  
+
+    mov ax, 0x8CCD
+    mov bx, 0x000E      ; 
+    shrd ax,bx,4        ; 0x8CCD => 0xE8CC  
+ 
+;;;;;;;;;;;;;;;;;;; rol ;;;;;;;;;;;;;;;;;;;;;;;
+    xor eax,eax
+    mov al, 0xCC
+    rol al, 2           ; ax 0x00cc => 0x0033
+    xor eax, eax
+
+    mov ah, 0xCC
+    rol ah, 2           ; ax 0xcc00 => 0x3300
+
+    mov ax, 0xC0CC
+    rol ax, 2           ; 0xC0CC => 0x0333
+
+    mov eax, 0xC184
+    rol ax, 2           ; 0xC004 => 0x0613
+
+    mov eax, 0xC0018004
+    rol eax, 2           ; 0xC0018004 => 0x00060013
+
+
+;;;;;;;;;;;;;;;;;;; ror ;;;;;;;;;;;;;;;;;;;;;;;
+ __ror:   
+    xor eax,eax
+    mov al, 0x33
+    ror al, 2           ; ax 0x0033 => 0x00cc 
+    xor eax, eax
+
+    mov ah, 0x33
+    ror ah, 2           ; ax 0x3300 => 0xcc00
+
+    mov ax, 0x0333
+    ror ax, 2           ; 0x0333 => 0xC0CC
+
+    mov ax, 0x0013
+    ror ax, 2           ; 0x0013 => 0xC004
+
+    mov eax, 0x13
+    ror eax, 3
+
+__bswap:
+   mov eax, 0x0000CCCC
+   bswap eax            ; 0x0000CCCC => 0xCCCC0000
+
+   mov eax, 0x1234ABCD
+   bswap eax            ; 0x1234ABCD => 0XCDAB3412
+
+ 
+
+	mov	eax,1           ; sys_exit
+	xor	ebx,ebx         ; exit code == 0
+	int	0x80            ; Вызов прерывания
+
+segment readable writeable
+
+msg db 'Test XOR!',0xA
+msg_size = $-msg

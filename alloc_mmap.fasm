@@ -1,0 +1,57 @@
+; /opt/devtools/include/symbols.inc
+; alloc_mmap.fasm
+; allocate memory using syscall 90 <==> mmap
+;
+; ROT_READ        equ 0x1
+; PROT_WRITE      equ 0x2
+; PROT_EXEC       equ 0x4
+; MAP_ANON        equ 0x20
+
+;declare
+
+format ELF executable 3
+entry start
+
+; let's try
+segment readable writeable
+FilePath db 'rnd_data.bin',0 ;
+counter     dd 0           ; счетчик цикла для случайных чисел
+buf  dd 0
+sz   dd 100
+mode dd 3 ; ROT_READ | ROT_write
+fl   dd 0x20
+con  dd 1
+offt dd 1
+
+;struc mmap_arg_struct [buf], [sz], [mode], [fl], [con], [offt]
+struc mmap_arg_struct ;[buf], [sz], [mode], [fl], [con], [offt]
+{
+.addr   rd 0;1
+.len    rd 100;1
+.prot   rd 3;1
+.flags  rd 0x20;1
+.fd     rd 1
+.offset rd 1
+}
+memdata mmap_arg_struct
+
+segment readable executable
+start:
+;
+;memdata mmap_arg_struct 0, [sz], mode, fl, con, offt
+
+mov eax,90
+mov ebx, [memdata]
+int 80h
+
+mov [buf], eax 
+
+
+exit: 
+    mov eax,1           ; sys_exit
+    xor ebx,ebx         ; exit code == 0
+    int 0x80            ; Вызов прерывания
+
+
+;
+;memdata mmap_arg_struct 0, sz, mode, fl, con, offt

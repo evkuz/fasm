@@ -1,0 +1,40 @@
+; alloc_mem_ex.fasm using 45 syscall
+;
+; Index > Linux > How do I alloc memory?
+; https://board.flatassembler.net/topic.php?t=1858&postdays=0&postorder=asc&start=0
+
+; If memory_setting is zero, we'll end up allocating all the memory in the system (freeram + freeswap) !??!
+; If memory_setting is not zero, then we limit the amount of memory to however much memory_setting is in kilobytes.
+;
+; 1) Call brk with NULL ptr to get a pointer to the current end of data segment
+; 2) Add however much I want to add (i.e., the number of bytes to commit)
+; 3) Call brk with the new end of data segment.
+; 4) The pointer to the new memory is the old end of data segment and the size is 
+
+
+
+init_memory:
+	mov	eax,esp
+	and	eax,not 0FFFh
+	add	eax,1000h-10000h
+	mov	[stack_limit],eax
+	xor	ebx,ebx
+	mov	eax,45
+	int	0x80
+	mov	[additional_memory],eax
+	mov	ecx,[memory_setting]
+	shl	ecx,10
+	jnz	allocate_memory
+	mov	ecx,[argument_value] ;1000000h
+      allocate_memory:
+	mov	ebx,[additional_memory]
+	add	ebx,ecx
+	mov	eax,45
+	int	0x80
+	mov	[memory_end],eax
+	sub	eax,[additional_memory]
+	shr	eax,2
+	add	eax,[additional_memory]
+	mov	[additional_memory_end],eax
+	mov	[memory_start],eax
+	ret

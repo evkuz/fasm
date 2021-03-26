@@ -1,0 +1,29 @@
+; Переводим строку в число.
+; число будет наблюдать в дебаггере.
+
+format ELF executable 3
+entry start
+
+
+segment readable writeable
+
+arg01 db '3578'  ; 0xdfa
+
+segment readable executable
+include 'str_2_int.inc'
+
+start:
+
+		mov esi, arg01   ; адрес строки
+		mov ecx, 4       ; длина строки
+		call str_2_int
+
+		nop
+		nop
+exit:
+
+    mov eax,1           ; sys_exit
+    xor ebx,ebx         ; exit code == 0
+    int 0x80            ; Вызов прерывания
+
+

@@ -1,0 +1,91 @@
+; string copy simple
+; Выводим разные размеры строки, поэтому переписываем edx новым значением размера
+;
+format ELF executable 3
+entry start
+
+segment readable executable
+
+start:
+
+call move_data
+call OP_1
+call print_source
+mov edx, sz_abc
+call print_out
+
+call move_data
+call OP_2
+mov edx, 3
+call print_out
+
+call move_data
+call OP_3
+mov edx, 7
+call print_out
+
+;;;;;;;;;;;;; EXIT  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+THE_END:
+mov eax,1
+int 80h
+;;;;;;;;;;;  move_data ;;;;;;;;;;;;;;;;
+move_data: 
+mov esi, str_in         ; Адрес источника - str_in
+mov edi, str_out        ; Адрес приемника - str_out
+ret
+
+OP_1:             ; переносим 4 байта напрямую
+movsd             ; Переместили 4 байта (первые) из источника в приемник
+mov eax, 0xA      ; Добавили \n 
+stosb             ; Добавили 1 байт из eax в конец строки ! (либо в начало,
+                  ; в зависимости от флага DF). Точнее - куда указывает EDI
+ret
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+OP_2:             ; Переносим 2 байта через eax, Добавляем \n
+lodsw            ; Переместили 2 байта (первые) to eax
+stosw             ; Добавили 2 байта из eax в конец строки ! (либо в начало,
+                  ; в зависимости от флага DF). Точнее - куда указывает EDI
+mov eax, 0xA      ; Добавили \n в eax
+stosb             ; Добавили \n в строку
+ret
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+OP_3:             ; Переносим 4 байта + 2 байта через eax
+lodsd       
+stos dword [es:edi]
+
+
+lodsw
+stosw
+
+mov eax, 0xA      ; Добавили \n в eax
+stosb             ; Добавили \n в строку
+ret
+
+
+;;;;;;;;;;; print_source
+print_source:
+; 1st - souce string
+mov eax,0x04          ; write 
+mov ebx,1             ; 1=stdout to ebx
+mov ecx,str_in        ; source string address of data 
+mov edx,sz_abc        ; size (amount) of data
+int 80h
+ret
+;;;;;;;;;;;;;;;;;; print out
+print_out:
+
+
+; next - destination string 
+mov eax,0x04
+mov ebx,1
+mov ecx, str_out
+;mov edx, sz_abc        ; size equal
+
+int 80h
+ret
+
+segment readable writeable
+str_in db 'abcd1234',0xA,0
+sz_abc = $ - str_in
+
+str_out rb sz_abc

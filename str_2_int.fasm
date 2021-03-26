@@ -1,0 +1,36 @@
+; str_2_int
+; Перевод строки в число побайтово
+; INPUT
+; ESI - address of string 	with decimal digits
+; ECX - string length of ESI
+; 
+; EAX -  
+format ELF executable 3
+entry start
+
+
+segment readable executable
+
+start:
+
+
+str_2_int:
+	;mov ecx, 10
+	push 0
+	@@: ; Перебираем символы строки ESI ищем совпадение с символом в EDI
+	;xor eax,eax
+   
+	lodsb       ;  Загрузили байт в EAX из ESI
+	;repne scasb ;  Вычитает из EAX текущий элемент EDI, повторяет операцию если не равно(результат не 0).
+	            ;  Если УСЧ == 0
+	
+	; вот теперь в ecx значение, равное позиции цифры в таблице 0-9
+	sub al, 0x30  ; получили цифру
+	pop edx        ; взяли предыдущее значение, умножили его на 10 и прибавили новую цифру
+	imul edx, 10
+	add dl, al
+	push EDX       ; новое значение в стек
+	loop @b
+	pop edx        ; выровняли стек
+
+	

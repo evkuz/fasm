@@ -1,0 +1,53 @@
+; Сравнение первых 4 байт в строках
+; НЕ годится для полноценного сравнения строк
+; Команда CMPS
+
+format ELF executable 3
+entry start
+
+segment readable executable
+
+start:
+
+	mov esi, str_1 + 4
+	mov edi, str_2 + 4
+	cmps dword [esi], [edi] ; Подсветка ???
+    jne Not_equal
+
+    EQUAL:
+    mov eax,0x04
+    mov ebx,1
+    mov ecx, msg_1
+    mov edx, msg1_size       ; size equal
+
+    int 80h
+   
+THE_END:
+
+	mov	eax,1           ; sys_exit
+	xor	ebx,ebx         ; exit code == 0
+	int	0x80            ; Вызов прерывания
+
+Not_equal:
+    mov eax,0x04
+    mov ebx,1
+    mov ecx, msg_2
+    mov edx, msg2_size       ; size equal
+
+    int 80h
+    jmp THE_END
+
+
+segment readable writeable
+
+str_1 db '123456789',0xA
+str_1_size = $-str_1
+
+str_2 db '1234dfghdgh',0xA
+str_2_size = $-str_2
+
+msg_1 db 'strings are equal', 0xA
+msg1_size = $-msg_1
+
+msg_2 db 'strings are NOT equal', 0xA
+msg2_size = $-msg_2

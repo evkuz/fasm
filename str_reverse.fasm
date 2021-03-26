@@ -1,0 +1,56 @@
+; Выполняем реверс строки - вывод строки наоборот (задом наперед)
+; At each iteration, you increment ESI and decrement EDI.
+format ELF executable 3
+entry start
+
+segment readable executable
+
+start:
+mov esi, str_in         ; Адрес источника
+mov edi, str_out        ; Адрес приемника
+mov ecx, sz_abc         ; Длина строки без 0xA, 0-символа
+add edi, ecx            ; Добавили к адресу длину, получили адрес конца строки
+
+mov byte [edi], 0xA
+
+dec edi       ; now edi points to end of string
+
+; Делаем проверку, что строка 0 или 1 байт и идем в конец.
+
+
+@@:
+mov al, [esi] ; load characters
+mov [edi], al
+inc esi       ; adjust pointers
+dec edi
+loop @b
+
+
+;;;;;;;;;;;;;;;;;; print out
+; 1st - souce string
+mov eax,0x04          ; write 
+mov ebx,1             ; 1=stdout to ebx
+mov ecx,str_in        ; source string address of data 
+mov edx,sz_abc +1     ; size (amount) of data and 1 symbol for 0xA
+int 80h
+
+; next - destination string 
+mov eax,0x04
+mov ebx,1
+mov ecx, str_out
+mov edx, sz_abc +1       ; size equal to source string
+
+int 80h
+
+
+;;;;;;;;;;;;; EXIT  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+THE_END:
+mov eax,1
+int 80h
+
+
+segment readable writeable
+str_in db 'abcd1234',0xA,0
+sz_abc = $ - str_in - 2
+
+str_out rb sz_abc

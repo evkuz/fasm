@@ -1,0 +1,38 @@
+; ВЫДЕЛЕНИЕ ПАМЯТИ
+; Проверяем резервирование, инициализацию памяти. 
+; $?
+
+
+format ELF executable 3
+entry start
+
+segment readable executable
+
+
+start:
+    mov [REZ_1B], 0x55
+    mov [REZ_2B], 0xff55
+
+    ;mov ax, 0xff55
+    ;mov fs, ax
+
+    mov eax,4                                 ; System call 'write'
+    mov ebx,1                                 ; 'stdout'
+    mov ecx,response                          ; Address of message
+    mov edx,response_length                   ; Length  of message
+    int 0x80                                  ; All system calls are done via this interrupt
+
+
+
+	mov eax, 1
+	mov ebx, 0
+	int 0x80      
+
+segment readable writeable
+
+DEF_1B   db 'some set of 1 byte data'
+STR_LEN = $-DEF_1B
+response db 'String length is ', STR_LEN, ' bytes' 
+response_length = $-response
+REZ_1B rb 1
+REZ_2B rw 1

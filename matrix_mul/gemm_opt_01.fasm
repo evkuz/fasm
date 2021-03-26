@@ -1,0 +1,420 @@
+; 
+; Получаем размер матриц А и В через параметр командной строки.
+
+; Строки и столбцы тоже задаем как аргументы ком. строки.
+; ./matrix_mult_param <size of file>  <mxArows>\
+;                     <mxAcoloumns> <mxC coloumns> 
+; 
+; Фиксируем время начала и время окончания перемножения.
+; Матрицы А и В считываем из файлов.
+; 
+; Перемножаем матрицы РАЗНОГО размера. Главное - столбцов_А=Строк_В
+; Передаем размер матрицы В как 4 (четвертый) параметр. 
+; ПРимер вызова :
+; ./gemm_opt_01 80 4 5 60 3
+
+format ELF executable 3
+entry start
+
+
+;section '.data' data readable writeable
+segment readable writeable
+
+
+FilePath_A db 'data_A.bin',0 ; Файл с данными матрицы А
+FilePath_B db 'data_B.bin',0 ; Файл с данными матрицы В
+FilePath_C db 'data_C.bin',0 ; Файл с данными матрицы C
+
+wrong_count_mess db 'This utility gets only 5 arguments - size of file in bytes'
+wr_sz = $ - wrong_count_mess
+
+BytesRead dd 0
+BytesWritten dd 0
+;Buffer rb 500000
+;2500 элементов по 4 байта
+; (1000x1000) * (1000x1000) => 1000x1000 
+
+Buffer_size_A dd 0   ; = 4000000 ; Размер матрицы А в байтах
+Buffer_size_B dd 0   ; = 4000000 ; Размер матрицы В в словах по 4 байта
+Buffer_size_C dd 0   ; = 4000000 ; Размер матрицы С в словах по 4 байта
+;Buffer_size dd 100  ;equ ($ - Buffer) ; Calculates the size at compile time
+;Buffer_C dd 40000
+;Buf_C_Size dd 100
+;NULL equ 0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mxA     dd 0; Указатель начала. Матрица А arv[2]*argv[3], память будет выделена.
+mxrA    dd 0           ; Матрица А число строк
+mxB     dd 0 ; Указатель начала. Матрица B 100*1000
+mxrB    dd 0                        ; Матрица В число строк (и столбцов в Матрице А)
+mxcolC  dd 0                        ; Матрица С (итоговая), количество столбцов (строк как в матрице А)
+mxCind  dd 0                        ; индекс столбца в итоговой матрице
+mxAcol  dd 0                        ; индекс столбца в матрице А
+mxBrow  dd 0                        ; индекс строки в матрице В
+mxArow  dd 0
+mxBcol  dd 0
+mystr   rd 6
+;room_01 dd 0     ; Выравниванием память
+;room_02 dd 0     ; для удобства наблюдения в дебаггере
+st_time_val  rb  4  ; start time value
+fin_time_val rb  4  ; finish time value
+str_of_time  rb 10
+
+result  dd 0     ; Указатель начала. Массив с элементами новой матрицы
+                       ; в словах по 4 байта
+;---------------------------------------------
+segment readable executable
+;section '.code' code readable executable
+include '/home/evkuz/asm/int_2_str.inc'
+include '/home/evkuz/asm/str_2_int.inc'
+include 'arg_val.inc'
+  start:
+      push ebp
+      mov  ebp, esp
+
+; Парсим аргумент командной строки, определяем размер матриц А И В.
+; Получаем значение аргумента №1 - размер файла
+       mov eax,[ebp+4]     ;argc
+       dec eax                 ; (-1) as there is "path" argument in addition to user arguments
+       cmp eax, 5 ; должно быть 5 параметров
+       jne wrong_arg_count ; Выводим сообщение, что должен быть только 1 аргумент.
+
+;;;;;;;;;;;;;;;;; Получаем значения аргументов
+  ;1й аргумент - размер файла матрицы А, адрес его(аргумента) строки
+  mov eax, [ebp + 12]
+  call get_arg_val
+  ; получили в eax значене аргумента - 
+  ; это размер файла в байтах
+  mov [Buffer_size_A], eax   ; кладем число в память, Столько памяти будем выделять для mxA
+  
+
+; Вычисляем значение счетчика цикла
+;  shr eax,2 ; поделили число в байтах на 4, получили число элементов в файле/матрице
+
+;  mov [numElement], EAX
+
+  ; 2-й аргумент - число строк матрицы А
+  mov eax, [ebp + 16]
+  call get_arg_val
+  ; получили в eax значене аргумента - mxrA
+  mov [mxrA], eax
+
+  ; 3-й аргумент - число столбцов матрицы А, оно же - число строк матрицы В
+  mov eax, [ebp + 20]
+  call get_arg_val
+  ; получили в eax значене аргумента - mxrB
+  mov [mxrB], eax
+
+; 4-й аргумент - размер файла матрицы В в байтах
+  mov eax, [ebp + 24]
+  call get_arg_val
+  ; получили в eax значене аргумента - Buffer_size_B
+  mov [Buffer_size_B], eax   ; Столько памяти будем выделять для mxB
+
+
+
+; 5-й аргумент - число столбцов матрицы C, оно же - число столбцов матрицы В
+  mov eax, [ebp + 28]
+  call get_arg_val
+  ; получили в eax значене аргумента - mxcolC
+  mov [mxcolC], eax
+
+
+  ; выделяем память заданного размера для матрицы A. ДАнные берем из файла.
+mov edi, mystr
+xor eax,eax
+stosd
+mov eax, [Buffer_size_A]; 0x2710
+stosd
+mov eax, 3
+stosd
+mov eax, 0x22
+
+stosd
+mov eax, -1
+stosd
+mov eax, 0
+stosd
+
+mov eax,90
+mov ebx, mystr
+int 80h
+; По завершении вызова получаем в eax указатель на область памяти заданного размера.
+mov [mxA], eax
+
+
+; Считываем данные из файла в массив матрицы А  - mxA
+;;;;;;;;;;;;; OPEN FILE Matrix A  ;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,0x05
+mov ebx,FilePath_A
+mov ecx,0 ; O_RDONLY        =       00
+mov edx,0  ; file already exists so no more options
+
+int 80h
+
+mov ebx,eax              ; file descriptor to ebx
+;;;;;;;;;;;;; READ FROM FILE Matrix A ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax, 0x03           ; read from file
+mov ecx, [mxA]        ; address of data 
+mov edx, [Buffer_size_A]            ; size (amount) of data
+int 80h
+
+
+ ; выделяем память заданного размера для матрицы B. ДАнные берем из файла.
+mov edi, mystr
+xor eax,eax
+stosd
+mov eax, [Buffer_size_B]; 0x2710
+stosd
+mov eax, 3
+stosd
+mov eax, 0x22
+
+stosd
+mov eax, -1
+stosd
+mov eax, 0
+stosd
+
+mov eax,90
+mov ebx, mystr
+int 80h
+; По завершении вызова получаем в eax указатель на область памяти заданного размера.
+mov [mxB], eax
+
+
+; Считываем данные из файла в массив матрицы B  - mxB
+;;;;;;;;;;;;; OPEN FILE Matrix B  ;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,0x05
+mov ebx,FilePath_B
+mov ecx,0 ; O_RDONLY        =       00
+mov edx,0  ; file already exists so no more options
+
+int 80h
+
+mov ebx,eax              ; file descriptor to ebx
+;;;;;;;;;;;;; READ FROM FILE Matrix B ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax, 0x03           ; read from file
+mov ecx, [mxB]       ; address of data 
+mov edx, [Buffer_size_B]            ; size (amount) of data
+int 80h
+
+;;;;;;;;;;;;;;;;;;;;; Вычисляем размер матрицы С, выделяем память.
+mov eax, [mxrA]
+mov ebx, [mxcolC]
+imul eax, ebx
+imul eax,4 ; каждый элемент это 4 байта
+mov [Buffer_size_C], eax
+
+ ; выделяем память заданного размера для матрицы C. ДАнные - результат перемножения А и В.
+mov edi, mystr
+xor eax,eax
+stosd
+mov eax, [Buffer_size_C]; 
+stosd
+mov eax, 3
+stosd
+mov eax, 0x22
+
+stosd
+mov eax, -1
+stosd
+mov eax, 0
+stosd
+
+mov eax,90
+mov ebx, mystr
+int 80h
+; По завершении вызова получаем в eax указатель на область памяти заданного размера.
+mov [result], eax
+
+;;;;;;;;;;; Начинаем перемножать
+
+
+; Получить время начала работы процесса 
+start_time_stamp:
+    mov eax, 13
+    mov ebx, st_time_val ; pointer going to store the return value
+    int 0x80
+
+
+ push 0 ; Далее пригодится
+ mov esi, [mxA] ; кладем в источник матрцу А
+ matrixA:
+
+          lodsd
+          mov edx, eax        ; получили текущий элемент матрицы А
+          inc [mxAcol]
+
+                                   ;  начало строки, 
+                                   ;  mxcolC - кол-во эл-тов
+                                   ;  в строке, а
+                                   ;  4 - размер элемента  
+                                   ; |--------------------|   |--столбец в нужной строке
+matrixB:                           ; [mxB + mxBrow*mxcolC*4 + mxCind*4]
+          mov ebx, [mxBrow]        ; [mxBrow] индекс строки, матрица В
+          imul ebx, [mxcolC]
+          imul ebx, 4              ; встали в начало строки
+
+          mov eax,[mxCind]
+          imul eax,4
+          mov ecx, mxB
+          add ecx, ebx
+B_fset:   add ecx, eax        ; получили адрес элемента матрицы B 
+                                   ; начало + смещение
+          inc [mxBrow]
+
+
+MatrixC:   
+          mov eax, [ecx]
+          imul eax, edx ; Умножаем элементы матриц A, B
+          ; EСX хранит произведение элементов
+          mov ebx, eax  ; сохраняем произведение
+          ;EBX хранит cумму произведений элементов, и в итоге (после n-прохода цикла )элемент матрицы С
+
+          ; Получили адрес элемента массива, где будет храниться новое значение элемента матрицы.
+
+          pop edx         ; Берем предыдущую сумму элементов    
+          add ebx, edx    ; ДОбавляем вновь полученный элемент, получаем новое значение суммы.
+          
+          push ebx           ; сохраняем новое значение суммы в стек
+
+          mov eax, [mxAcol]
+          cmp eax, [mxrB] ; Все столбцы в строке матрицы А ?
+
+      jne matrixA ; if ne, то Переходим к следующему столбцу матрицы A в текущей строке
+          ; Прошли 1 цикл умножения 1 строки матрицы А на 1 столбец матрицы В.
+          ; 
+          ; Переходим к следующему столбцу матрицы В (строка матрицы А все та же),
+          ; получим следующий элемент матрицы С
+          ; Надо его сохрянять рядом с соседним элементом.
+          ; Вот тут надо элемент матрицы С положить в массив  
+          ; Вычисляем положение нового элемента относительно начала массива result
+
+          mov eax, [mxCind]  ; result + mxCind*4 + mxArow*4*mxcolC
+          imul eax, 4
+          mov ecx, [mxArow]
+          imul ecx, 4       ; Умножаем на индекс строки
+          imul ecx, [mxcolC]
+          add eax, ecx
+          mov ecx, result
+          add ecx, eax ; Получили адрес, куда сохранить новый элемент матрицы С
+          
+          pop ebx
+          mov [ecx], ebx  ; сохранили значение в памяти ПО НОВОМУ АДРЕСУ
+
+          mov [mxAcol], 0 ; индекс стоблца в матрице А Обнуляем, строка та же.
+          mov [mxBrow], 0    ; индекс строки в матрице В Обнуляем
+
+           mov ebx, [mxArow] ; индекс строки Матрица А
+           imul ebx, 4
+           imul ebx, [mxrB] ; mxrB - количество столбцов в mxA
+                            ; в начало нужной строки
+          mov esi, [mxA];
+          add esi, ebx ; Указатель на начало нужной строки
+          ;mov esi, [mxA + ebx]
+          
+          push 0             ; ОБнуляем в стеке сумму элементов
+
+          inc [mxCind]      ; начинаем новый столбец (элемент в строке) итоговой матрицы.
+          mov eax, [mxcolC] ; == 100
+          cmp [mxCind], eax  ; столбцов не может быть больше mxcolC
+      jne matrixA        ; if ne, то Переходим к следующему столбцу матрицы В, если их еще меньше mxcolC
+          ; Прошли все столбцы в матрице В, получили очередной элемент матрицы С
+          ; Переходим к новой строке в матрице А
+          mov [mxCind],0  ; Обнуляем счетчик столбцов матрицы В
+          
+          inc [mxArow]    ; индекс строки матрицы А увеличиваем     
+          ;;;;;;;;;;; переносим esi на начало нужной строки
+          mov ebx, [mxArow] ; индекс строки Матрица А
+          imul ebx, 4
+          imul ebx, [mxrB] ; mxrB - количество столбцов в mxA
+                            ; в начало нужной строки
+
+          mov esi, [mxA] ; Указатель на начало нужной строки
+          add esi, ebx ;
+        ;mov esi, [mxA + ebx]
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          mov eax, [mxArow]
+          cmp [mxrA], eax  ; Все строки в матрице А ? 
+      jne matrixA      ; if ne, то Переходим к следующей строке в матрице А
+   
+
+finish_time_stamp:
+    mov eax, 13
+    mov ebx, fin_time_val ; pointer going to store the return value
+    int 0x80
+
+; free memory for matrixA - ?
+; now make unmap mxA
+mov eax, 91
+mov ebx, [mxA]
+mov ecx, [Buffer_size_A] ; size
+int 0x80            ; Вызов прерывания
+
+
+; free memory for matrixB - ?
+; now make unmap mxA
+mov eax, 91
+mov ebx, [mxB]
+mov ecx, [Buffer_size_B] ; size
+int 0x80            ; Вызов прерывания
+
+;;;;;;;;;;;;; CREATE FILE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,0x08            ; create file
+mov ebx, FilePath_C              ; ebx filename
+mov ecx,0x1b4           ; permissions value
+int 80h
+
+mov ebx,eax              ; file descriptor to ebx
+;;;;;;;;;;;;; WRITE TO FILE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax, 0x04           ; write to file
+mov ecx,[result]        ; address of data 
+mov edx,[Buffer_size_C] ; sz     Buffer_size_C        ; size (amount) of data
+int 80h
+;;;;;;;;;;;;; CLOSE FILE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,06h            ; close file
+int 80h
+
+; free memory for MatrixC ?
+; now make unmap mxA
+mov eax, 91
+mov ebx, [result]
+mov ecx, [Buffer_size_C] ; size
+int 0x80            ; Вызов прерывания
+
+;;;;;;;;;;;;;;;;;;; output start_time_stamp ;;;;;;;;;;;;;;;;
+  mov eax, dword [st_time_val]
+  mov edi, str_of_time
+  call int_to_string
+  mov eax,4           ; sys_write - код 4
+  mov ebx,1           ; stdout   mycommand 2>&1    0 - STDIN, 1 - STDOUT, 2 - STDERR
+  mov ecx,str_of_time ; Адрес строки, т.е 1-го байта 
+  ;mov  edx,msg_size    ; Размер строки уже в edx после завершения 'int_to_string'
+  int 0x80            ; Вызов прерывания
+
+;;;;;;;;;;;;;;;;;;; output fin_time_stamp ;;;;;;;;;;;;;;;;
+  mov eax, dword [fin_time_val]
+  mov edi, str_of_time
+  call int_to_string
+  mov eax,4           ; sys_write - код 4
+  mov ebx,1           ; stdout   mycommand 2>&1    0 - STDIN, 1 - STDOUT, 2 - STDERR
+  mov ecx,str_of_time ; Адрес строки, т.е 1-го байта 
+  ;mov  edx,10    ; Размер строки уже в edx после завершения 'int_to_string'
+  int 0x80            ; Вызов прерывания
+
+
+; now exit
+exit:
+  mov eax, 1
+  xor ebx,ebx         ; exit code == 0
+  int 0x80   
+
+wrong_arg_count: 
+   ;wron aargument count message
+    mov eax,4
+    mov ebx,1
+    mov ecx,wrong_count_mess
+    mov edx,wr_sz
+    int 0x80
+    jmp exit
+
