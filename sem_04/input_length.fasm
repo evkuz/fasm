@@ -1,0 +1,79 @@
+; 
+; Пример показывает, что длину строки, введённой пользователем, не нужно отдельно вычислять.
+; Число, означающее длину строки, находится в EAX по завершении системного вызова с кодом 3
+
+format ELF executable 3
+entry start
+
+segment readable writeable executable
+include 'int_2_str.inc'
+
+start:
+	mov edi, msg5
+
+	mov	eax,4
+	mov	ebx,1
+	mov	ecx,msg1
+	mov	edx,msg1_size
+	int	0x80
+
+; now read input
+  mov eax, 3
+  mov ebx, 0
+  mov ecx, msg2
+  mov edx, max_len
+  int 0x80
+
+; По завершении системного вызова 3 (Чтение) имеем в регистре eax длину строки, 
+; введенную пользователем.
+; Поэтому сразу сохраняем эту длину здесь.
+; Т.к. строка, введенная пользоателем хранит и символ \n, то предварительно уменьшим число на 1
+  dec eax
+  mov [len_val], al ; Записали длину строки в переменную
+
+call int_to_string
+;Сейчас регистр EDX содержит число, означающее длину строки, но оно уже у нас есть - это [len_val]
+;А строка msg5 содержит символы, показывающие число - длину строки.
+
+
+   ;3rd print comment message for length
+    mov eax,4
+    mov ebx,1
+    mov ecx,msg4
+    mov edx,msg4_sz
+    int 80h
+
+   ;4th print length int value as string 
+    mov eax,4
+    mov ebx,1
+    mov ecx,msg5
+    mov dl, [len_val]
+    int 80h
+
+
+
+;;;;;;;;;;;;; EXIT  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+THE_END:
+mov eax,1
+int 80h
+
+
+segment readable writeable
+
+msg1 db 'Enter some text : '
+msg1_size = $-msg1
+
+msg2 rb 255
+max_len db '255'
+
+msg3 db 'you entered     : '
+msg3_sz = $ - msg3
+
+msg4 db 'your string length is '
+msg4_sz = $ - msg4
+
+
+len_val rb 1
+
+msg5 rb 5    ; 5 символов - строка, показывающая число
+msg5_sz rb 1 ; 1 байт - хранит длину строки. 255 символов хватит
