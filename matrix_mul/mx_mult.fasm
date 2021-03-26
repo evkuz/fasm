@@ -1,0 +1,181 @@
+; Пример умножения матриц (4x5) * (5x4) => (2x4)
+; Получили всю матрицу С. Записываем матрицу С в файл. 
+; Для этого используем системный вызов
+; 
+
+format ELF executable 3
+entry start
+
+
+;section '.data' data readable writeable
+segment readable writeable
+FilePath_A db '/PATH-TO-YOUR-FILE/data_A.bin',0 ; Файл с данными матрицы А
+FilePath_B db '/PATH-TO-YOUR-FILE/data_B.bin',0 ; Файл с данными матрицы В
+FilePath_C db '/PATH-TO-YOUR-FILE/data_C.bin',0 ; Файл с данными матрицы C
+
+;BytesRead dd 0
+;BytesWritten dd 0
+;Buffer rb 500000
+;Buffer.size_A dd 00 ; Размер матрицы А в байтах
+;Buffer.size_B dd 00 ; Размер матрицы В в байтах
+;Buffer.size_ABuffer.size_C dd 32 ; Размер матрицы С в байтах
+;Buffer.size dd 100  ;equ ($ - Buffer) ; Calculates the size at compile time
+;Buffer_C dd 40000
+;Buf_C_Size dd 100
+;NULL equ 0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mxA     dd 11,13,15,17,19,12,14,16,18,20,31,33,35,37,39,42,44,46,48,50  ; Матрица А 4*5
+mxrA    dd 4           ; Матрица А число строк
+mxB     dd 19,17,15,13,11,9,8,10,12,22,24,26,28,32,34; Матрица B 5*3
+mxrB    dd 5                        ; Матрица В число строк (и столбцов в Матрице А)
+mxcolC  dd 3                        ; Матрица С (итоговая), количество столбцов, такое же как и в mxB (строк как в матрице А)
+mxCind  dd 0                        ; индекс столбца в итоговой матрице
+mxAcol  dd 0                        ; индекс столбца в матрице А
+mxBrow  dd 0                        ; индекс строки в матрице В
+mxArow  dd 0
+mxBcol  dd 0
+;room_01 dd 0     ; Выравниванием память
+;room_02 dd 0     ; для удобства наблюдения в дебаггере
+result  dd 0      ; Массив с элементами новой матрицы
+
+;---------------------------------------------
+segment readable executable
+;section '.code' code readable executable
+
+  start:
+      push ebp
+      mov  ebp, esp
+        xor ebx,ebx  ; ЭЛЕМЕНТ МАТРИЦЫ С
+        xor eax,eax   ; ИНДЕКС СТРОКИ МАТРИЦЫ А
+
+        xor ecx,ecx   ; ЭЛЕМЕНТ МАТРИЦЫ А
+        xor edx,edx   ; ЭЛЕМЕНТ МАТРИЦЫ В
+        xor edi, edi
+
+ push 0 ; Далее пригодится
+ matrixA:
+         ; Берем элемент из матрицы А, сохраняем в ecx
+         ; mov eax, [mxA + mxAcol*4] - ТАК НЕ РАБОТАЕТ !!!
+          mov ecx, [mxAcol] ; индекс столбца Матрица А
+          imul ecx, 4
+          
+          mov ebx, [mxArow] ; индекс строки Матрица А
+          imul ebx, 4
+          imul ebx, [mxrB] ; mxrB - количество столбцов в А
+          
+          
+          mov eax, mxA ; mxa + mxAcol*4 + mxArow*mxrB*4 ; индекс элемента массива увеличиваем на 4 т.к. каждый элемент занимает 4 байта
+          add eax, ebx 
+A_fset:   add eax, ecx   ; Получили адрес текущего элемента матрицы А
+
+          mov edx, [eax] ; получили текущий элемент матрицы А
+          
+          inc [mxAcol]
+                                   ;  начало строки, 
+                                   ;  mxcolC - кол-во эл-тов
+                                   ;  в строке, а
+                                   ;  4 - размер элемента  
+                                   ; |--------------------|   |--столбец в нужной строке
+matrixB:                           ; [mxB + mxBrow*mxcolC*4 + mxCind]
+          mov edi, [mxBrow]        ; [mxCind] индекс столбца, матрица В
+          imul edi, [mxcolC]       ; [mxcolC] количество столбцов матрица В
+          imul edi,4
+
+          ;mov ecx, dword [mxB + edi*4]
+          mov ecx, mxB
+          add ecx, edi
+
+B_fset:    
+          mov eax, [mxBcol]  ; result + mxCind*4 + mxArow*4*mxcolC
+          imul eax, 4
+
+          add ecx, eax        ; получили элемент матрицы B
+          
+
+          inc [mxBrow]
+          mov esi, [mxBrow]    ; Это для проверки
+
+
+MatrixC:
+          imul ecx, edx ; Умножаем элементы матриц A, B
+          ; EСX хранит произведение элементов
+          mov ebx, ecx  ; сохраняем произведение
+          ;EBX хранит cумму произведений элементов, и в итоге (после n-прохода цикла )элемент матрицы С
+          ; Вот тут надо элемент матрицы С положить в массив  
+          ; Вычисляем положение нового элемента относительно начала массива result
+
+          mov eax, [mxCind]  ; result + mxCind*4 + mxArow*4*mxcolC
+          imul eax, 4
+          mov ecx, [mxArow]
+          imul ecx, 4       ; Умножаем на индекс строки
+          imul ecx, [mxcolC]
+          add eax, ecx
+          mov ecx, result
+          add ecx, eax ; Получили адрес, куда сохранить новый элемент матрицы
+
+          ; Получили адрес элемента массива, где будет храниться новое значение элемента матрицы.
+
+          pop edx         ; Берем предыдущую сумму элементов    
+          add ebx, edx    ; ДОбавляем вновь полученный элемент, получаем новое значение суммы.
+          ;mov [ecx], ebx  ; сохранили значение в памяти ПО НОВОМУ АДРЕСУ для проверки
+
+          push ebx           ; сохраняем новое значение суммы в стек
+
+          mov eax, [mxAcol]
+          cmp eax, [mxrB] ; Все столбцы в строке матрицы А ?
+
+      jne matrixA ; Переходим к следующему столбцу матрицы A в текущей строке
+                  ; умножаем на следующий эл-т (строка) в текущем столбце матрицы В
+          ; Прошли 1 цикл умножения 1 строки матрицы А на 1 столбец матрицы В.
+          ; 
+          ; Переходим к следующему столбцу матрицы В, получим следующий элемент матрицы С
+          ; Надо его сохрянять рядом с соседним элементом.
+          mov [mxAcol], 0 ; индекс стоблца в матрице А Обнуляем
+          mov [mxBrow], 0    ; индекс строки в матрице В Обнуляем
+
+          pop eax
+          push 0             ; ОБнуляем в стеке сумму элементов
+
+          inc [mxCind]      ; начинаем новый столбец итоговой матрицы.
+          inc [mxBcol]      ; новый столбец матрицы В
+          mov eax, [mxcolC] ; == 100
+          cmp [mxCind], eax  ; столбцов не может быть больше mxcolC
+      jne matrixA        ; Переходим к следующему столбцу матрицы В, если их еще меньше mxcolC
+          ; Прошли все столбцы в матрице В, получили очередной элемент матрицы С
+          ; Переходим к новой строке в матрице А
+          mov [mxCind],0  ; Обнуляем счетчик столбцов матрицы В
+          mov [mxBcol],0
+          inc [mxArow]    ; индекс строки матрицы А увеличиваем          
+          mov eax, [mxArow]
+          cmp [mxrA], eax  ; Все строки в матрице А ? 
+      jne matrixA      ; Переходим к следующей строке в матрице А
+         
+
+;;;;;;;;;;;;; CREATE FILE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,0x08            ; create file
+mov ebx,f               ; ebx filename
+mov ecx,0x1b4           ; permissions value
+int 80h
+
+mov ebx,eax              ; file descriptor to ebx
+;;;;;;;;;;;;; WRITE TO FILE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax, 0x04           ; write to file
+mov ecx,result        ; address of data 
+mov edx,sz              ; size (amount) of data
+int 80h
+;;;;;;;;;;;;; CLOSE FILE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,06h            ; close file
+int 80h
+
+
+; now exit
+exit:
+  mov eax, 1
+  xor ebx,ebx         ; exit code == 0
+  int 0x80   
+
+;section '.idata' import data readable
+ 
+f db 'c.bin',0
+;somedata dd 8    ; 8 dword элементов
+sz = 48

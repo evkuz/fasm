@@ -1,0 +1,301 @@
+; Создаем файл двоичных данных при помощи генератора случайных чисел
+; В случае, когда надо сгенерить файл большого размера, скажем 4млн. байт, результирующий
+; файл будет около 8 Мбайт., т.е. память резервируется в самом исполняемом файле, что не есть гуд.
+; Чтобы избежать большого размера программы при генерации больших матриц будем размер считывать как Ввод
+; пользователя.
+; 
+; Задаем размер создаваемого файла через аргумент запуска прграммы.
+; Для начала 1 аргумент - размер в байтах
+;
+
+
+format ELF executable 3
+entry start
+
+segment readable writeable ;executable
+
+;;;;;;;;;;;;;;;;;;;;
+FilePath db 'rnd_data.bin',0 ;
+hFile dd 0
+BytesRead dd 0
+BytesWritten dd 0
+NULL equ 0
+
+
+out_message      db 'Some random value : %u',0
+wrong_count_mess db 'This utility gets only 1 argument - size of file in bytes'
+wr_sz = $ - wrong_count_mess
+bottom_edge    dd 0x0000003C
+top_edge    dd 0x7FFFFFFE    ; 4294967294 
+numElement  dd 0         ; Число СЛОВ (1/2/4 байта), записанных в файл
+counter     dd 0           ; счетчик цикла для случайных чисел
+; Данные для генератора случайных чисел
+JJ      =       10             ; lag 1
+KK      =       17             ; lag 2, size of circular buffer
+R1      =       19             ; rotate count
+R2      =       27             ; rotate count
+randp1  dt      1.5            ; used for conversion to float
+        dw      0              ; alignment
+p1      dd      0              ; pointer in circular buffer
+p2      dd      0              ; pointer in circular buffer
+randbuf dd      (2*KK) dup(?)  ; circular buffer
+;;;;; Резервируем под ВВод ползователя
+
+buf dd 0 ; здесь адрес начала буфера.
+fsize_str_size dd   1  ; Размер строки - аргумента введенного пользователем, поменяем в процессе, но в 1 байт уложимся
+fsize_bytes    dd   1  ; Размер создававемого файла, резервируем 32 бита
+fsize_str      rb 255  ; Указатель на строку - аргумент пользователя
+;;;;; Резервируем Данные для записи буферов
+;Buffer.size rd 1    ;equ ($ - Buffer) ; Calculates the size at compile time
+;Buffer      rd 100    ; Указатель на буфер, хранящий данные Матрицы, из него будет записан файл 
+
+mystr rd 6
+
+
+
+;section '.code' code readable executable
+segment readable executable
+include '/home/evkuz/asm/str_2_int.inc'
+start:
+        push    ebp
+        mov     ebp,esp
+
+
+; Получаем значение аргумента №1 - размер файла
+       mov eax,[ebp+4]     ;argc
+       dec eax                 ; (-1) as there is "path" argument in addition to user arguments
+       cmp eax, 1
+       jne wrong_arg_count ; Выводим сообщение, что должен быть только 1 аргумент.
+
+;;;;;;;;;;;;;;;;; Получаем значения аргументов
+  ;mov eax, [ebp + 12] ;1й аргумент - адрес его строки
+  mov esi, [ebp + 12]
+  mov ecx, -1 ; счетчик цикла по полной
+  ;получаем длину строки
+  ;для этого сканируем пока не получим нулевой байт.
+
+  strlen:
+   inc ecx
+     lodsb
+     cmp al, 0
+     jne strlen
+; Вот теперь получили длину в ECX и начинаем перевод в число
+  mov esi, [ebp + 12]
+  push ecx
+
+  call str_2_int
+  ; получили в eax значене аргумента
+  ; это размер файла в байтах
+  mov [fsize_bytes], eax   ; кладем число в память
+; Вычисляем значение счетчика цикла
+  shr eax,2 ; поделили число в байтах на 4, получили число элементов в файле/матрице
+
+  mov [numElement], EAX
+
+  ; выделяем память заданного размера.
+mov edi, mystr
+xor eax,eax
+stosd
+mov eax, [fsize_bytes]; 0x2710
+stosd
+mov eax, 3
+stosd
+mov eax, 0x22
+
+stosd
+mov eax, -1
+stosd
+mov eax, 0
+stosd
+
+mov eax,90
+mov ebx, mystr
+int 80h
+; По завершении вызова получаем в eax указатель на область памяти заданного размера.
+mov [buf], eax
+;;;;;;;;;;; Преобразуем ввод пользователя в число
+
+        ; Инициализация генератора случайных чисел
+        ;invoke  GetTickCount 
+        ; rdtsc loads the current value of the processor's time stamp counter 
+        ; from the 64-bit MSR into the EDX and EAX registers.
+        rdtsc
+        call WRandomInit   ;,eax has tickckount in eax - last 32 bits
+
+        ;stdcall WRandom
+        ; В регистрах EDX:EAX случайное число
+
+rnd_cycle: ; Получаем случайное число, пишем его в буфер
+            mov eax, [bottom_edge]
+            mov ebx, [top_edge]
+
+            call WIRandom
+            ;,[bottom_edge],[top_edge] ;0xFFFFFFFE
+             ; В регистре EAX случайное число
+            
+            mov ecx, [counter] ;
+            imul ecx,4
+            add ecx, [buf]          ;Buffer
+            mov [ecx], eax
+            inc [counter]
+            
+            mov edx, [numElement]
+            cmp [counter], edx
+            jne rnd_cycle
+
+            mov [counter], 0
+           
+Write_Buf: ; Пишем буфер в файл
+
+;;;;;;;;;;;;; CREATE FILE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,0x08            ; create file
+mov ebx, FilePath       ; ebx filename
+mov ecx,0x1b4           ; permissions value
+int 80h
+
+mov ebx,eax             ; file descriptor to ebx
+;;;;;;;;;;;;; WRITE TO FILE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax, 0x04           ; write to file
+mov ecx, [buf]          ; address of data 
+mov edx,[fsize_bytes]   ; size (amount) of data in bytes
+int 80h
+;;;;;;;;;;;;; CLOSE FILE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,06h            ; close file
+int 80h
+
+; А где освобождение памяти ???!!!
+
+exit: 
+    mov eax,1           ; sys_exit
+    xor ebx,ebx         ; exit code == 0
+    int 0x80            ; Вызов прерывания
+
+
+wrong_arg_count: 
+   ;wron aargument count message
+    mov eax,4
+    mov ebx,1
+    mov ecx,wrong_count_mess
+    mov edx,wr_sz
+    int 0x80
+    jmp exit
+
+
+;---------------------------------------------
+; Получить случайное число
+; stdcall WRandom
+; на выходе EDX:EAX - случайное число
+;---------------------------------------------
+;proc    WRandom
+WRandom:
+        call WBRandom
+        or      edx, 80000000h
+        mov     dword [randp1],eax
+        mov     dword [randp1+4],edx
+        fld1
+        fld     [randp1]
+        ret
+;endp
+ 
+;---------------------------------------------
+; Получить случайное число в нужном интервале
+; stdcall WIRandom,min,max
+; на выходе EAX - случайное число
+; EAX=80000000h - ошибка
+;---------------------------------------------
+;proc    WIRandom rmin:dword,rmax:dword
+WIRandom:
+        push    ebx ; сохраняем на время работы ф-ции
+ 
+        call WBRandom
+        ; Проверить корректность задания границ, MIN<MAX
+        ;mov     ebx,[rmax] оно там и так уже
+        sub     ebx, [bottom_edge] ; [rmin]
+        js      .WIRandom_1
+        inc     ebx
+        mov     ecx,edx
+        mul     ebx
+        mov     eax,ecx
+        mov     ecx,edx
+        mul     ebx
+        add     eax,ecx
+        adc     edx,[bottom_edge]    ; [rmin]
+        mov     eax,edx
+ 
+        pop     ebx ; возвращаем сохраненное при выходе
+        ret
+ 
+.WIRandom_1:
+        mov     eax,80000000h
+        pop     ebx
+        ret
+;endp
+ 
+;---------------------------------------------
+; Инициализация генератора случайных чисел
+; stdcall WRandomInit,seed
+;---------------------------------------------
+;proc    WRandomInit seed:dword
+WRandomInit: ; already have seed in eax 
+        ;mov     eax,[seed]
+        xor     ecx,ecx
+.WRandomInit_1:
+        imul    eax,2891336453
+        inc     eax
+        mov     [randbuf+ecx*4],eax
+        inc     ecx
+        cmp     ecx,KK*2
+        JB      .WRandomInit_1
+ 
+        fld1
+        fstp    [randp1]
+        mov     [p1],0
+        mov     [p2],JJ*8
+        
+        call WBRandom
+ 
+        push    edi
+ 
+        mov     edi,30
+.WRandomInit_2:
+        call WBRandom
+        dec     edi
+        jnz     .WRandomInit_2
+ 
+        pop     edi
+        ret
+;endp
+ 
+;---------------------------------------------
+; Вспомогательная процедура генератора
+; В пользовательском не вызывается
+;---------------------------------------------
+;proc    WBRandom
+ WBRandom:  ; already has data in EBX
+        push    ebx
+        mov     ebx, [p1]
+        mov     ecx, [p2]
+        mov     edx, [randbuf+ebx]
+        mov     eax, [randbuf+ebx+4]
+ 
+        rol     edx, R1
+        rol     eax, R2
+        add     edx, [randbuf+ecx]
+        add     eax, [randbuf+ecx+4]
+        mov     [randbuf+ebx], eax
+        mov     [randbuf+ebx+4], edx
+        sub     ebx, 8
+        jnc     .WBRandom_1
+        mov     ebx, (KK-1)*8
+.WBRandom_1:
+        sub     ecx, 8
+        jnc     .WBRandom_2
+        mov     ecx, (KK-1)*8
+.WBRandom_2:
+        mov     [p1], ebx
+        mov     [p2], ecx
+        pop     ebx
+        ret
+;endp
+
+

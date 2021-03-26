@@ -1,0 +1,35 @@
+;map_struct.fasm
+struc my_struc a,b,c,d {
+        .a dw a
+        .b dw b
+        .c db c
+        .d db d
+}
+
+;instantiate
+my_label my_struc 0x3456,0x9876,'X','r'
+
+;access
+mov ax,[my_label.a]    
+
+
+struc mmap_arg_struct
+{
+.addr   rd 1
+.len    rd 1
+.prot   rd 1
+.flags  rd 1
+.fd     rd 1
+.offset rd 1
+}
+;
+
+struc mmap_arg_struct addr, len, prot, flags, fd, offset
+{
+.addr   rd 1
+.len    rd 1
+.prot   rd 1
+.flags  rd 1
+.fd     rd 1
+.offset rd 1
+}

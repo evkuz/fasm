@@ -1,0 +1,52 @@
+; модификация входной строки
+; Команды stos, lods, movs, loop
+format ELF executable 3
+entry start
+
+segment readable executable
+
+start:
+mov esi, str_in         ; Адрес источника - str_in
+mov edi, str_out        ; Адрес приемника - str_in
+mov ecx, sz_abc -1      ; Длина строки без 0-символа
+
+movsd             ; Переместили 4 байта (первые) из источника в приемник
+mov eax, 0xA       
+stosb             ; Добавили 1 байт из eax в конец строки ! (либо в начало,
+                  ; в зависимости от флага DF)
+
+
+;Теперь меняем значение DF, повторяем.
+
+pushfd    ; сохраняем значение регистра флагов в стек
+;
+pop eax   ; считываем вершину стека (а это и есть биты регистра флагов)   
+
+
+
+;;;;;;;;;;;;;;;;;; print out
+; 1st - souce string
+mov eax,0x04          ; write 
+mov ebx,1             ; 1=stdout to ebx
+mov ecx,str_in        ; source string address of data 
+mov edx,sz_abc        ; size (amount) of data
+int 80h
+; next - destination string 
+mov eax,0x04
+mov ebx,1
+mov ecx, str_out
+mov edx, sz_abc        ; size equal
+
+int 80h
+
+;;;;;;;;;;;;; EXIT  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+THE_END:
+mov eax,1
+int 80h
+
+
+segment readable writeable
+str_in db 'abcd1234',0xA,0
+sz_abc = $ - str_in
+
+str_out rb sz_abc

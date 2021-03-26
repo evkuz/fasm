@@ -1,0 +1,110 @@
+; Пример умножения матриц (2x3) * (3x4) => (2x4)
+; Получили всю матрицу С. Записываем матрицу С в файл. 
+; Для этого используем системный вызов
+; 
+
+format ELF executable 3
+entry start
+
+
+;section '.data' data readable writeable
+segment readable writeable
+FilePath_A db 'data_A.bin',0 ; Файл с данными матрицы А
+FilePath_B db 'data_B.bin',0 ; Файл с данными матрицы В
+FilePath_C db 'data_C.bin',0 ; Файл с данными матрицы C
+A_descriptor dd 0
+B_descriptor dd 0
+
+;BytesRead dd 0
+;BytesWritten dd 0
+;Buffer rb 500000
+Buffer_size_A dd 80 ; Размер матрицы А в байтах
+Buffer_size_B dd 60 ; Размер матрицы В в байтах
+;Buffer.size_ABuffer.size_C dd 32 ; Размер матрицы С в байтах
+;Buffer.size dd 100  ;equ ($ - Buffer) ; Calculates the size at compile time
+;Buffer_C dd 40000
+Buf_C_Size dd 48
+;NULL equ 0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mxA     dd 11,13,15,17,19,12,14,16,18,20,31,33,35,37,39,42,44,46,48,50  ; Матрица А 4*5
+mxrA    dd 4           ; Матрица А число строк
+mxB     dd 19,17,15,13,11,9,8,10,12,22,24,26,28,32,34; Матрица B 5*3
+mxrB    dd 5                        ; Матрица В число строк (и столбцов в Матрице А)
+mxcolC  dd 3                        ; Матрица С (итоговая), количество столбцов, такое же как и в mxB (строк как в матрице А)
+;mxA     dd 3,5,7,9,11,13,15,19,21 ; Матрица А 2*3
+;mxrA    dd 3           ; Матрица А число строк
+;mxB     dd 2,4,6,8,10,12,14,16,18 ; Матрица B 3*4
+;mxrB    dd 3                        ; Матрица В число строк (и столбцов в Матрице А)
+;mxcolC  dd 3                        ; Матрица С (итоговая), количество столбцов (строк как в матрице А)
+mxCind  dd 0                        ; индекс столбца в итоговой матрице
+mxAcol  dd 0                        ; индекс столбца в матрице А
+mxBrow  dd 0                        ; индекс строки в матрице В
+mxArow  dd 0
+mxBcol  dd 0
+
+result  rd 48      ; Массив с элементами новой матрицы
+data_A  rd 80
+data_B  rd 60
+
+;---------------------------------------------
+segment readable executable
+;section '.code' code readable executable
+
+  start:
+      push ebp
+      mov  ebp, esp
+        xor ebx,ebx  ; ЭЛЕМЕНТ МАТРИЦЫ С
+        xor eax,eax   ; ИНДЕКС СТРОКИ МАТРИЦЫ А
+
+        xor ecx,ecx   ; ЭЛЕМЕНТ МАТРИЦЫ А
+        xor edx,edx   ; ЭЛЕМЕНТ МАТРИЦЫ В
+        xor edi, edi
+
+;;;;;;;;;;;;; CREATE FILE with A elements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,0x08            ; create file
+mov ebx,FilePath_A      ; ebx filename
+mov ecx,0x1b4           ; permissions value
+int 80h
+
+mov [A_descriptor], eax              ; file descriptor to ebx
+
+;;;;;;;;;;;;; CREATE FILE with B elements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,0x08            ; create file
+mov ebx,FilePath_B      ; ebx filename
+mov ecx,0x1b4           ; permissions value
+int 80h
+
+mov [B_descriptor], eax              ; file descriptor to ebx
+
+
+
+;;;;;;;;;;;;; WRITE TO FILE A-elements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax, 0x04           ; write to file
+mov ebx, [A_descriptor]
+mov ecx, mxA      ; address of data 
+mov edx, [Buffer_size_A]          ; size (amount) of data
+int 80h          
+ 
+
+;;;;;;;;;;;;; WRITE TO FILE B-elements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax, 0x04           ; write to file
+mov ebx, [B_descriptor]
+mov ecx, mxB      ; address of data 
+mov edx, [Buffer_size_B]           ; size (amount) of data
+int 80h          
+      
+;;;;;;;;;;;;; CLOSE FILE A_descriptor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,06h            ; close file
+mov ebx, [A_descriptor]
+int 80h 
+
+;;;;;;;;;;;;; CLOSE FILE B_descriptor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,06h            ; close file
+mov ebx, [B_descriptor]
+int 80h 
+
+; now exit
+exit:
+  mov eax, 1
+  xor ebx,ebx         ; exit code == 0
+  int 0x80   
