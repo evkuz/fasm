@@ -1,0 +1,68 @@
+plan_sem_05
+
+0. - str_ops_03 vs /04/out_of_mem - обсудить различия
+   - Экономия байт. обсудить инициализацию памяти, если не по порядку.
+
+1. - Вспоминаем reflect_input . Переходим к int_to_string
+2. - ek_int_2_str
+
+3. - reflect_input 0-4 
+     - Нарушение вывода при изменении порядка инициализации памяти.  
+     - 0-1 ДОбавление сегмента (readable + writable) дает прирост в объеме в 32 байта.
+     - После чтения по int 0x80 Получаем длину строки в eax !
+     - 1-2 Экономия 3 байт
+     - Проверить размер у 02, если вернуть порядок инициализации.
+     - дополнительный вывод числа символов, введенных пользователем.
+
+4. rdtsc_02 
+     - смотрим порядок байт, записанных в файл. Подсчитываем байты.
+   rdtsc_03
+     - правильная запись данных в esi, правильное заполнение файла - 24 байта.
+   rdtsc_04
+     - Другой способ формирования адреса в esi (экономия в 3 байта)
+       смотрим на [esi+16/20/24/] - 28 байт
+   rdtsc_05 
+     - Добавили подсчет разницы между двума rdtsc. 
+     - Преобразовали эту разницу в строку
+     - Вывели строку.
+ 
+5. Озор скрипта middle.bash
+
+6. Сортировка вывода. Выборка первого и последнего значения. head, tail
+
+ 
+
+   ; cpu_1 to string
+   mov edi, cpu_1
+   mov eax, cpu_1_val
+   call int_to_string
+   ; now in dl is the length of string representing the digital value
+   ; but we ha ve to store it while edx is being in used
+   mov [cpu_1_val], dl
+
+   mov eax,4
+   mov ebx,1
+   mov ecx, cpu_start
+   mov dl, [sz_cpu_start] 
+   int 0x80
+   
+   mov eax,4
+   mov ebx,1
+   mov ecx, cpu_1
+   mov dl, [cpu_1_val]
+   int 0x80
+
+
+
+
+   mov edi, cpu_2
+   mov eax, cpu_2_val
+   call int_to_string
+   mov [sz_cpu_fin], dl
+
+   mov eax,4
+   mov ebx,1
+   mov ecx, cpu_2
+   mov dl, [sz_cpu_fin]
+   int 0x80
+

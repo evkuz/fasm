@@ -1,0 +1,92 @@
+; Выполняем реверс строки - вывод строки наоборот (задом наперед)
+; At each iteration, you increment ESI and decrement EDI.
+format ELF executable 3
+entry start
+
+segment readable executable
+;include 'user_input.inc'
+start:
+;mov esi, msg1        ; Адрес исходной строки пользователя
+;mov edi, msg2        ; Адрес перевернутой строки пользователя
+;mov edx, msg1_size         ; Длина строки без 0xA, 0-символа
+
+
+  mov eax, 4
+  mov ebx, 0
+  mov ecx, msg1
+  mov edx, msg1_size
+  int 0x80
+
+
+; now read input
+  mov eax, 3
+  mov ebx, 0
+  mov ecx, msg2 ; Да, тоже esi, тк. предыдущее значение уже не нужно.
+  mov edx, 255 ; max_length
+  int 0x80
+; 
+
+;call get_user_input
+dec eax ; Не учитываем в длине символ \n
+mov [msg2_sz], byte al
+;mov msg2, edi
+;mov esi, msg2 ; Исходная строка в esi. Но, тогда в esi и  edi один адрес, а значит будет наложение символов
+mov esi, msg2
+mov edi, str_reverse
+add edi, eax            ; Добавили к адресу длину, получили адрес конца строки
+
+mov byte [edi], 0xA     
+
+dec edi       ; now edi points to end of string
+
+; Делаем проверку, что строка 0 или 1 байт и идем в конец.
+xor ecx, ecx
+;dec [msg2_sz]
+mov cl, [msg2_sz]
+@@:
+mov al, [esi] ; load characters
+mov [edi], al
+inc esi       ; adjust pointers
+dec edi
+loop @b
+
+
+;;;;;;;;;;;;;;;;;; print out
+; 1st - souce string
+mov eax,0x04          ; write 
+mov ebx,1             ; 1=stdout to ebx
+mov ecx,msg3        ; source string address of data 
+mov edx,msg3_size     ; size (amount) of data and 1 symbol for 0xA
+int 80h
+
+; next - destination string 
+mov eax,0x04
+mov ebx,1
+mov ecx, str_reverse
+mov dl, sz_reverse       ; size equal to source string
+
+int 80h
+
+
+;;;;;;;;;;;;; EXIT  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+THE_END:
+mov eax,1
+int 80h
+
+
+segment readable writeable
+
+msg1 db 'Enter some text       : '
+msg1_size = $-msg1
+
+msg3 db 'Your reversed text is : '
+msg3_size = $-msg3
+
+msg2 rb 255  ; Максимальная Длина строки, вводимой пользоателем. Столько байт резервируем.
+msg2_sz rb 1 ; резервируем 1 байт под значение длины
+
+
+str_reverse rb 255
+sz_reverse = $ - str_reverse
+
+;str_out rb sz_abc
