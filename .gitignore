@@ -1,0 +1,11 @@
+*
+#!/home/evkuz/asm/*.asm
+#!/home/evkuz/asm/*.fasm
+#!/home/evkuz/asm/*.bash
+#!/home/evkuz/asm/*.sh
+#!/home/evkuz/asm/sem_*
+
+!*.*
+!*/*
+!*/*.*
+!sem_*
