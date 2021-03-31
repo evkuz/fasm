@@ -1,0 +1,14 @@
+RDTSCP1:
+
+EDX=0000e97f
+EAX=e8cc3608
+
+RDTSCP2;
+
+EDX=0000e9b5
+EAX=1e1cdc02
+
+subtraction = 0x353550A5FA = 228 527 744 506₁₀
+
+Такое большое число, т.к. делали руками в edb-debugger
+
