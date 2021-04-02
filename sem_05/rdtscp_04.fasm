@@ -1,0 +1,123 @@
+;rdtscp_01 убрал лишнюю переменную cpu_1_val - сравни с rdtscp.fasm
+; В будущем она все же понадобится т.к. вызов ф-ции int_2_str будет не сразу следом за rdtscp, а позже.
+;
+; rdtscp_02 Делаем ПРАВИЛЬНОЕ вычитание счетчика EDX:EAX
+
+; rdtscp_04 Добавляем вычитание данных "в лоб". Надо довести до ума
+
+format ELF executable 3
+entry start
+
+segment readable executable
+;include 'file.inc'
+include 'int_2_str.inc'
+include 'hex-dword-2-str.inc'
+start:
+
+mov edi, d_val   ; строка будет хранить символы числового значения, поэтому d_val
+rdtscp ; 
+
+;mov [cpu_1_val], cl ; записываем число - номер ядра
+; get EDX:EAX
+mov ebx,EAX
+mov ecx,EDX 
+
+mov [rdtscp1_val], EDX
+mov [rdtscp1_val + 32], EAX
+
+
+
+
+;push [rdtscp1_val]       ; Проверено, данные верные
+;push [rdtscp1_val + 32]  ; 
+
+rdtscp ; get new values for ticks
+; sbb subtracts the source operand from the destination operand, subtracts one if CF is set, 
+; and stores the result to the destination operand. 
+sub eax, ebx ; Вычитаем младшие 32 бит, смотрим значение cf
+; если не было переноса значит в старших 32 битах одинаково.
+; и тогда результатом будет полученное значение. Идем на output
+jnc output
+
+; А если CF установлен, то идем на вычитание старших 32 бит
+sbb edx, ecx
+mov eax, edx
+; и уже потом на output
+
+; имеем в eax разницу, выводим её
+output:
+; имеем в eax предыдущий результат вычитания
+; Выполняем новое вычитание
+
+
+    call int_to_string
+    mov [sz_d_val], dl ; записываем число - количество байт в строке d_val
+
+; comment message
+   mov eax,4
+   mov ebx,1
+   mov ecx,diff
+   mov dl, sz_diff
+   int 0x80
+
+; string value mesasge
+
+   mov eax,4
+   mov ebx,1
+   mov ecx, d_val
+   mov dl, [sz_d_val]
+   int 0x80
+
+; Пока просто выводим значения тиков
+direct_subtraction:
+
+ mov eax, [rdtscp1_val]
+ mov edi, hexstr
+ call hex_dword_2_str
+
+ 
+    mov eax,4
+    mov ebx,1
+    mov ecx, hexstr
+    mov edx,8
+    int 0x80
+
+ mov eax, [rdtscp1_val + 32]
+ mov edi, hexstr
+ call hex_dword_2_str
+ mov [hexstr + 8], 0xA
+
+    mov eax,4
+    mov ebx,1
+    mov ecx, hexstr
+    mov edx,9
+    int 0x80
+
+;;;;;;;;;;;;;; end of direct_subtraction:
+; now exit 
+mov	eax,1           ; sys_exit
+xor	ebx,ebx         ; exit code == 0
+int	0x80            ; Вызов прерывания
+
+
+
+segment readable writeable
+msg db 'Done!',0xA
+msg_size = $-msg
+
+diff db 'The difference in ticks is : '
+sz_diff = $ - diff
+
+d_val rb 12    ; число символов в строке, резервируем
+sz_d_val rb 1  ; ячейка хранящая это число
+
+rdtscp1_val rd 2 ; данные счетчика 1
+rdtscp2_val rd 2; данные счетчика 2
+
+addr db 0
+
+hexstr rb 8
+sz_hexstr = $ - hexstr
+
+
+

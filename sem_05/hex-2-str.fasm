@@ -1,0 +1,44 @@
+; Конвертация dword hex-данных в ascii представление.
+;
+
+format ELF executable 3
+entry start
+
+segment readable executable
+include 'hex-dword-2-str.inc'
+
+start:
+
+    mov eax, [hexdata]
+    mov edi, hexstr
+    call hex_dword_2_str
+
+    
+	mov	eax,4           ; sys_write - код 4
+	mov	ebx,1           ; stdout   mycommand 2>&1    0 - STDIN, 1 - STDOUT, 2 - STDERR
+	mov	ecx,msg         ; Адрес строки, т.е 1-го байта 
+	mov	edx,msg_size    ; Размер строки
+	int	0x80            ; Вызов прерывания
+
+
+    mov eax,4
+    mov ebx,1
+    mov ecx, hexstr
+    mov edx,8
+    int 0x80
+
+; now exit
+exit:
+	mov eax, 1
+	xor	ebx,ebx         ; exit code == 0
+	int 0x80   
+
+
+segment readable writeable
+
+msg db 'Ascii view of hex value is ',0xA
+msg_size = $-msg
+
+hexdata dd 0xABCD7A4f
+hexstr db 8
+sz_hexstr = $ - hexstr
