@@ -7,8 +7,13 @@
  ; 1 588 073 223
  ; 1 588 073 647
  ; 1 589......
+ ; .....
+ ; 1 608 336 000 01.01.2021
+ ; 86400 * 91 = 7 862 400  за 91 день (02.04.2021)
 
-
+ ; Итого на 02.04.2021 вычислено
+ ; 1 616 198 400
+ ; 1 617 291 990                                        
 
 
 format ELF executable 3
@@ -27,8 +32,8 @@ start_time_stamp:
 
     mov ecx, dword [st_time_val]
 
-    ;     the return value is the time in seconds since the Epoch
-    ; convert value to string
+    ;the return value is the time in seconds since the Epoch
+    ;convert value to string
     ;mov eax, [ebx] ; ebx stores value in seconds
     mov edi, str_of_time
     call int_to_string
@@ -55,7 +60,7 @@ exit:
 
 segment readable writeable
 
-msg db 'The integer value is',0xA
+msg db 'The number of seconds since 01.01.1970 is : '
 msg_size = $-msg
 
 st_time_val rb  4  ; start time value
