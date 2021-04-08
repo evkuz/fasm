@@ -6,4 +6,7 @@
 #find . -type f  ! -name "*.*"  -delete
 
 # Чтобы удалять только в текущей директории 
-find . -maxdepth 1 type f  ! -name "*.*"  -delete
+#find . -maxdepth 1 type f  ! -name "*.*"  -delete
+
+# 
+find . -type f -executable -delete
