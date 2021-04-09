@@ -7,81 +7,75 @@
 ; rdtscp_05 Доводим до ума вычитание данных "в лоб". Вывод 1-й rdtscp в 1 строку.
 ; rdtscp_06 Доводим до ума вычитание данных "в лоб". Вывод 2-й rdtscp в 1 строку.
 ; Видим, что разница между hex числами такая же как выводимое число.
+; rdtscp_07 Добавляем вывод номера ядра !
 
 ; !!!!!!!!!!  ЭТО РАБОЧИЙ ВАРИАНТ !!!!!!!!!!!!!!!!
-
 
 format ELF executable 3
 entry start
 
 segment readable executable
-;include 'file.inc'
+
 include 'int_2_str.inc'
 include 'hex-dword-2-str.inc'
 start:
 
 mov edi, d_val   ; строка будет хранить символы числового значения, поэтому d_val
-rdtscp ; 
-mov [core_number], cl
+rdtscp   ; записываем число - номер ядра
 
-;mov [cpu_1_val], cl ; записываем число - номер ядра
-; get EDX:EAX
+; get EDX:EAX - 1st value of ticks
 mov ebx,EAX
 mov ecx,EDX 
 
 mov [rdtscp1_val], EDX     ; кладем в память старшие 32 бита
-mov [rdtscp1_val + 4], EAX ; кладем младшие 32 бита в память по адресу на 4 байта ДАЛЬШЕ, чем первые 32 бита
-
-
-
-
-;push [rdtscp1_val]       ; Проверено, данные верные
-;push [rdtscp1_val + 32]  ; 
+mov [rdtscp1_val + 4], EAX ; кладем младшие 32 бита в память по адресу на 4 байта ДАЛЬШЕ, чем первые 32 бита. 
+                           ; для младших 32 бит Память зарезервирована
 
 rdtscp ; get new values for ticks
 
 mov [rdtscp2_val], EDX     ; кладем в память старшие 32 бита
 mov [rdtscp2_val + 4], EAX ; кладем младшие 32 бита в память по адресу на 4 байта ДАЛЬШЕ, чем первые 32 бита
 
-
-; sbb subtracts the source operand from the destination operand, subtracts one if CF is set, 
-; and stores the result to the destination operand. 
-sub eax, ebx ; Вычитаем младшие 32 бит, смотрим значение cf
+; Начинаем вычислять разницу в значениях rdtscp1_val и rdtscp2_val
+sub eax, ebx ; Вычитаем младшие 32 бит, смотрим cf
 ; если не было переноса значит в старших 32 битах одинаково.
 ; и тогда результатом будет полученное значение. Идем на output
+mov [diff_val], eax ; Сохраняем разницу в переменную.
 jnc output
 
 ; А если CF установлен, то идем на вычитание старших 32 бит
+; sbb subtracts the source operand from the destination operand, subtracts one if CF is set, 
+; and stores the result to the destination operand. 
 sbb edx, ecx
-;mov eax, edx
 mov [diff_val], edx ; Сохраняем разницу в переменную.
 
 ; и уже потом на output
-
-; имеем в eax разницу, выводим её
+; 
 output:
-; имеем в eax предыдущий результат вычитания
-; Выполняем новое вычитание
+; Выводим сопроводительное сообщение по номеру ядра
 
-xor eax,EAX
+  mov eax,4
+  mov ebx,1
+  mov ecx,core_msg
+  mov edx,sz_core_msg
+  int 0x80
+
+; Перводим номер ядра в строку
 mov al, [core_number]
 mov edi, core_number_str
 call int_to_string
 mov [sz_core_number_str], dl
 
-   ;mov eax,4
-   ;mov ebx,1
-   ;mov ecx,core_msg
-   ;mov dl,[sz_core_msg]
-   ;int 0x80
-   
-   ;mov eax,4
-   ;mov ebx,1
-   ;mov ecx,core_number_str
-   ;mov dl,[sz_core_number_str] 
-   ;int 0x80
+; Выводим номер ядра  
+   mov eax,4
+   mov ebx,1
+   mov ecx,core_number_str
+   mov dl,[sz_core_number_str] 
+   int 0x80
 
+; Перводим в строку разницу в тиках
     mov eax, [diff_val]
+    mov edi, d_val   ; строка будет хранить символы числового значения, поэтому d_val 
     call int_to_string
     mov [sz_d_val], dl ; записываем число - количество байт в строке d_val
 
@@ -92,7 +86,7 @@ mov [sz_core_number_str], dl
    mov dl, sz_diff
    int 0x80
 
-; string value mesasge
+; Выводим разницу как строку в 10-чном виде
 
    mov eax,4
    mov ebx,1
@@ -100,7 +94,7 @@ mov [sz_core_number_str], dl
    mov dl, [sz_d_val]
    int 0x80
 
-; Пока просто выводим значения тиков в hex-виде.
+; Вводим значения тиков в hex-виде.
 direct_subtraction:
 ; Выводим значение 1-й rdtscp
 ; Т.к. число 64-битное, то выводим 2 раза по 32 бит в hex-виде.
@@ -108,26 +102,22 @@ direct_subtraction:
 ; Сначала старшие 32 бит (EDX)
  mov eax, [rdtscp1_val]
  mov edi, hexstr
- call hex_dword_2_str
+ call hex_dword_2_str ; Переводим в строку старшие 32 бита, строка будет длиной 8 символов (32 бита в hex-виде)
 
-; Выводить не обязательно 
-;    mov eax,4
-;    mov ebx,1
-;    mov ecx, hexstr
-;    mov edx,8
-;    int 0x80
+; Выводить не обязательно, лучше добавим младшие 32 бита и выведем одной строкой
 
+; Записываем младшие 32 бита
  mov eax, [rdtscp1_val + 4]
- mov edi, hexstr
- add edi, 8
- call hex_dword_2_str
- mov [hexstr + 16], 0xA
+ mov edi, hexstr  ; Начало строки там же, где старшие 32 бита         
+ add edi, 8       ; А теперь сдвигаем на 8 символов вперед, куда будут записаны символы младших 32 бит
+ call hex_dword_2_str ; Переводим в строку младшие 32 бита, строка будет длиной 8 символов (32 бита в hex-виде)
+ mov [hexstr + 16], 0xA ; Добавляем в конец строки \n
 
 ; Выводим сразу 16 символов + перевод строки
     mov eax,4
     mov ebx,1
     mov ecx, hexstr
-    mov edx,17
+    mov edx,17 ; Так нагляднее
     int 0x80
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Выводим значение 2-й rdtscp
@@ -148,7 +138,7 @@ direct_subtraction:
     mov eax,4
     mov ebx,1
     mov ecx, hexstr
-    mov edx,17
+    mov edx,17 ; Так нагляднее
     int 0x80
 
 
@@ -162,9 +152,10 @@ int	0x80            ; Вызов прерывания
 
 
 segment readable writeable
-core_number     rb 1 ; число, означающее номер ядра
+core_number     rb 2 ; число, означающее номер ядра
 core_number_str rb 2 ; 1 цифра + перевод строки.
-sz_core_number_str = $ - core_number_str ; длина строки
+sz_core_number_str db 2; длина строки как параметр системного вызова
+;= $ - core_number_str ; длина строки
 
 core_msg db 'Core number is : '         
 sz_core_msg = $ - core_msg
@@ -183,7 +174,7 @@ rdtscp2_val rd 2 ; данные счетчика 2 - 64 бита
 addr db 0
 
 hexstr rb 8
-sz_hexstr = $ - hexstr
+;sz_hexstr = 17
 
 
 
