@@ -4,6 +4,12 @@
 ; rdtscp_02 Делаем ПРАВИЛЬНОЕ вычитание счетчика EDX:EAX
 
 ; rdtscp_04 Добавляем вычитание данных "в лоб". Надо довести до ума
+; rdtscp_05 Доводим до ума вычитание данных "в лоб". Вывод 1-й rdtscp в 1 строку.
+; rdtscp_06 Доводим до ума вычитание данных "в лоб". Вывод 2-й rdtscp в 1 строку.
+; Видим, что разница между hex числами такая же как выводимое число.
+
+; !!!!!!!!!!  ЭТО РАБОЧИЙ ВАРИАНТ !!!!!!!!!!!!!!!!
+
 
 format ELF executable 3
 entry start
@@ -22,14 +28,21 @@ rdtscp ;
 mov ebx,EAX
 mov ecx,EDX 
 
-mov [rdtscp1_val], EDX
-mov [rdtscp1_val + 32], EAX
+mov [rdtscp1_val], EDX     ; кладем в память старшие 32 бита
+mov [rdtscp1_val + 4], EAX ; кладем младшие 32 бита в память по адресу на 4 байта ДАЛЬШЕ, чем первые 32 бита
+
+
 
 
 ;push [rdtscp1_val]       ; Проверено, данные верные
 ;push [rdtscp1_val + 32]  ; 
 
 rdtscp ; get new values for ticks
+
+mov [rdtscp2_val], EDX     ; кладем в память старшие 32 бита
+mov [rdtscp2_val + 4], EAX ; кладем младшие 32 бита в память по адресу на 4 байта ДАЛЬШЕ, чем первые 32 бита
+
+
 ; sbb subtracts the source operand from the destination operand, subtracts one if CF is set, 
 ; and stores the result to the destination operand. 
 sub eax, ebx ; Вычитаем младшие 32 бит, смотрим значение cf
@@ -66,30 +79,58 @@ output:
    mov dl, [sz_d_val]
    int 0x80
 
-; Пока просто выводим значения тиков
+; Пока просто выводим значения тиков в hex-виде.
 direct_subtraction:
-
+; Выводим значение 1-й rdtscp
+; Т.к. число 64-битное, то выводим 2 раза по 32 бит в hex-виде.
+;
+; Сначала старшие 32 бит (EDX)
  mov eax, [rdtscp1_val]
  mov edi, hexstr
  call hex_dword_2_str
 
- 
+; Выводить не обязательно 
+;    mov eax,4
+;    mov ebx,1
+;    mov ecx, hexstr
+;    mov edx,8
+;    int 0x80
+
+ mov eax, [rdtscp1_val + 4]
+ mov edi, hexstr
+ add edi, 8
+ call hex_dword_2_str
+ mov [hexstr + 16], 0xA
+
+; Выводим сразу 16 символов + перевод строки
     mov eax,4
     mov ebx,1
     mov ecx, hexstr
-    mov edx,8
+    mov edx,17
     int 0x80
-
- mov eax, [rdtscp1_val + 32]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Выводим значение 2-й rdtscp
+; Т.к. число 64-битное, то выводим 2 раза по 32 бит в hex-виде.
+;
+; Сначала старшие 32 бит (EDX)
+ mov eax, [rdtscp2_val]
  mov edi, hexstr
  call hex_dword_2_str
- mov [hexstr + 8], 0xA
 
+ mov eax, [rdtscp2_val + 4]
+ mov edi, hexstr
+ add edi, 8
+ call hex_dword_2_str
+ mov [hexstr + 16], 0xA
+
+; Выводим сразу 16 символов + перевод строки
     mov eax,4
     mov ebx,1
     mov ecx, hexstr
-    mov edx,9
+    mov edx,17
     int 0x80
+
+
 
 ;;;;;;;;;;;;;; end of direct_subtraction:
 ; now exit 
@@ -109,8 +150,8 @@ sz_diff = $ - diff
 d_val rb 12    ; число символов в строке, резервируем
 sz_d_val rb 1  ; ячейка хранящая это число
 
-rdtscp1_val rd 2 ; данные счетчика 1
-rdtscp2_val rd 2; данные счетчика 2
+rdtscp1_val rd 2 ; данные счетчика 1 - 64 бита
+rdtscp2_val rd 2 ; данные счетчика 2 - 64 бита
 
 addr db 0
 
