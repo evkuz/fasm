@@ -1,0 +1,23 @@
+ДОбавить :
+
+инструкции ins, outs
+
+ The repetition terminates when one of the conditions specified by the prefix
+ is satisfied
+
+В общем надо обращаться в Intel instruction set
+
+
+REPNE SCAS m32 ZO Valid Valid Find EAX, starting at ES:[(E)DI].
+
+
+
+Repeats a string instruction the number of times specified in the count register
+ or until the indicated condition of the ZF flag is no longer met.
+
+
+REPNE (repeat while not equal)
+
+
+CHAPTER 4
+INSTRUCTION SET REFERENCE, M-U

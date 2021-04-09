@@ -4,6 +4,10 @@ plan_sem_06
 
 2. to_upper - перевод строки в верхний регистр. ;Пример использования repe, xlatb;  а русские буквы ?
 
+
+repne and repnz terminate the execution when the ZF is set.
+
+
 5.1 test_af/_02 - Проверка флага AF (с использованием lahf, 'bt' и без нее)
 
 
