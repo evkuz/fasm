@@ -1,5 +1,8 @@
 # fasm
 
+20.04.2021
+Added float project for floating point issues
+
 29.03.2021
 Added sem_06 files from NEW, ubuntu desktop !!!
 
