@@ -23,6 +23,8 @@ start:
 mov edi, d_val   ; строка будет хранить символы числового значения, поэтому d_val
 rdtscp   ; записываем число - номер ядра
 
+mov [core_number], cl ; записываем число - номер ядра
+
 ; get EDX:EAX - 1st value of ticks
 mov ebx,EAX
 mov ecx,EDX 
