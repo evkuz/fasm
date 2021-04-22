@@ -1,0 +1,47 @@
+; float_01 - View float values in edb-debugger
+format ELF executable 3
+entry start
+
+segment readable executable
+
+; 0x3F5F7CEE = 0.873 = 8.7300002574920654296875E-1      = 0.873 with float accuracy
+; 0x3FEBEF9DB22D0E56 = 8.729999999999999982236431606E-1 = 0.873 with double accuracy
+
+; 0x3E020C4A = 1.270000040531158447265625E-1 = 0.127 with float accuracy
+
+
+start:
+
+;    mov eax, 0x7f  ;127
+;    mov ebx, 0x3e8 ; 1000
+
+;    div ebx
+finit
+fld dword [val_1] ; val_1 to st0
+fld dword [val_2] ; val_2 to st0, val_1 to st1
+fadd st1, st0
+
+
+
+	mov	eax,4           ; sys_write - код 4
+	mov	ebx,1           ; stdout   mycommand 2>&1    0 - STDIN, 1 - STDOUT, 2 - STDERR
+	mov	ecx,msg         ; Адрес строки, т.е 1-го байта 
+	mov	edx,msg_size    ; Размер строки
+	int	0x80            ; Вызов прерывания
+
+
+; now exit
+exit:
+	mov eax, 1
+	xor	ebx,ebx         ; exit code == 0
+	int 0x80   
+
+
+segment readable writeable
+
+msg db 'The message',0xA
+msg_size = $-msg
+
+val_1 dd 8.73E-1
+val_2 dd 1.27E-1
+
