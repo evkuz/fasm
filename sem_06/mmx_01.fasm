@@ -1,0 +1,102 @@
+;rdtscp_01 убрал лишнюю переменную cpu_1_val - сравни с rdtscp.fasm
+; В будущем она все же понадобится т.к. вызов ф-ции int_2_str будет не сразу следом за rdtscp, а позже.
+;
+; rdtscp_03 добавляем вторую rdtscp, выводим сообщение, если номера ядер для 1й и 2й команд различаются. 
+; Убеждаемся, что одинаково
+
+
+format ELF executable 3
+entry start
+
+segment readable executable
+;include 'file.inc'
+;include 'int_2_str.inc'
+start:
+
+mov edi, d_val   ; строка будет хранить символы числового значения, поэтому d_val
+rdtscp ; 
+; По завершении rdtscp имеем в ECX номер ядра, выполнившего эту команду.
+movd mm0, edx
+movd mm1, eax
+pslld mm0, 16
+paddd mm0,mm1
+
+
+mov [cpu_1_val], cl ; записываем число - номер ядра
+; store number of ticks
+mov ebx,EAX
+mov ecx,EDX 
+; launch new ticks number
+rdtscp ; get new values for ticks
+mov [cpu_2_val], cl ; записываем число - номер ядра
+
+    mov eax,ecx
+    ;call int_to_string
+    mov [sz_d_val], dl ; записываем число - количество байт в строке d_val
+
+
+mov al, [cpu_1_val]
+mov bl, [cpu_2_val]
+cmp eax,ebx
+je output
+
+mov eax,4
+mov ebx,1
+mov ecx,core_diff
+mov edx,sz_core_diff
+int 0x80
+
+
+
+
+
+output:
+; comment message
+   mov eax,4
+   mov ebx,1
+   mov ecx,cpu_start
+   mov dl, sz_cpu_start
+   int 0x80
+
+; string value mesasge
+
+   mov eax,4
+   mov ebx,1
+   mov ecx, d_val
+   mov dl, [sz_d_val]
+   int 0x80
+
+
+
+; now exit 
+mov	eax,1           ; sys_exit
+xor	ebx,ebx         ; exit code == 0
+int	0x80            ; Вызов прерывания
+
+
+
+segment readable writeable
+msg db 'Done!',0xA
+msg_size = $-msg
+
+diff db 'The difference in ticks is : '
+sz_diff = $ - diff
+sz = 32
+
+d_val rb 5
+sz_d_val rb 1
+cpu_1_val rb 1 ; численное значение номера ядра
+cpu_2_val rb 1 ; численное значение номера ядра
+
+cpu_1_str rb 4 ; адрес строки, показывающей номер ядра
+cpu_2_str rb 4
+
+core_diff db 'Cores for 2 rdtscp are different !!!'
+sz_core_diff = $ - core_diff
+
+cpu_start db '1st cpu number is : '
+sz_cpu_start = $ - cpu_start
+
+cpu_fin db '2nd cpu number is : '
+sz_cpu_fin = $ - cpu_fin
+
