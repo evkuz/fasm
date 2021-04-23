@@ -11,22 +11,14 @@ entry start
 
 ;section '.data' data readable writeable
 segment readable writeable
+f db 'c.bin',0
+sz = 32             ; Размер файла с матрицей С в байтах
+st_time_val  rb  4  ; start time value
+fin_time_val rb  4  ; finish time value
+str_of_time  rb 10
 
 
-FilePath_A db '/PATH-TO-YOUR-FILE/data_A.bin',0 ; Файл с данными матрицы А
-FilePath_B db '/PATH-TO-YOUR-FILE/data_B.bin',0 ; Файл с данными матрицы В
-FilePath_C db '/PATH-TO-YOUR-FILE/data_C.bin',0 ; Файл с данными матрицы C
 
-;BytesRead dd 0
-;BytesWritten dd 0
-;Buffer rb 500000
-;Buffer.size_A dd 00 ; Размер матрицы А в байтах
-;Buffer.size_B dd 00 ; Размер матрицы В в байтах
-;Buffer.size_ABuffer.size_C dd 32 ; Размер матрицы С в байтах
-;Buffer.size dd 100  ;equ ($ - Buffer) ; Calculates the size at compile time
-;Buffer_C dd 40000
-;Buf_C_Size dd 100
-;NULL equ 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 mxA     dd 1,2,3,2,3,4 ; Матрица А 2*3
 mxrA    dd 2           ; Матрица А число строк
@@ -196,11 +188,4 @@ exit:
   int 0x80   
 
 ;section '.idata' import data readable
-segment readable writeable 
-f db 'c.bin',0
-somedata dd 8    ; 8 dword элементов
-sz = 32
-st_time_val  rb  4  ; start time value
-fin_time_val rb  4  ; finish time value
-str_of_time  rb 10
 
