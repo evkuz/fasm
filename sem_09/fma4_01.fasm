@@ -1,0 +1,21 @@
+;fma4_01
+; vfmaddpd ymm0,ymm1,[esi],ymm2  ; multiply and add
+
+format ELF executable 3
+entry start
+
+segment readable executable
+;section '.code' code readable executable
+;include '/home/evkuz/asm/int_2_str.inc'
+  start:
+  use64
+  ;mov ymm0, dword 0x12345vmulsd xmm0,xmm7,qword [esi]  ; multiply two 64-bit floats678
+  extrq xmm0,8,7
+  vmulsd xmm0,xmm7,qword [esi]  ; multiply two 64-bit floats
+  vmovups [edi],ymm6        ; store unaligned 256-bit data
+  ;The FMA (Fused Multiply-Add) extension introduces additional AVX 
+  ;instructions which perform multiplication and summation as single 
+  ;operation.
+  ;vmovups xmm0, qword0x12345678
+  vfnmadd132sd xmm0,xmm5,[ebx]   ; multiply, negate and add
+  vfmaddpd ymm0,ymm1,[esi],ymm2  ; multiply and add
