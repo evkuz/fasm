@@ -4,7 +4,7 @@ format ELF executable 3
 entry start
 
 segment readable executable
-include 'hex-dword-2-str.inc'
+include '/home/evkuz/asm/include/hex-dword-2-str.inc'
 ; 0x3F5F7CEE = 0.873 = 8.7300002574920654296875E-1      = 0.873 with float accuracy
 ; 0x3FEBEF9DB22D0E56 = 8.729999999999999982236431606E-1 = 0.873 with double accuracy
 
@@ -80,7 +80,7 @@ msg2_size = $-msg2
 
 
 
-val_1 dd 8.73E-1
+val_1 dd 0.873
 val_2 dd 1.27E-1
 hexstr db 8
 
