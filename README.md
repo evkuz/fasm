@@ -1,5 +1,8 @@
 # fasm
 
+29.04.2021
+Added article "A Sandbox for Optimizing GEMM" to matrix_mul/optimization/ as "matrix_mult_algo.pdf" 
+
 20.04.2021
 Added float project for floating point issues
 
