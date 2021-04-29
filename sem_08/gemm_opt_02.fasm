@@ -1,8 +1,10 @@
-; 
+; gemm_opt_02.fasm Вспоминаем статью "A Sandbox for Optimizing GEMM"
+; Вот откуда пошло GEMM
+
 ; Получаем размер матриц А и В через параметр командной строки.
 
 ; Строки и столбцы тоже задаем как аргументы ком. строки.
-; ./matrix_mult_param \
+; ./gemm_opt_02.fasm \
 ;  <size of file A>  \  1 аргумент
 ;  <mxArows>  \         2 аргумент
 ;  <mxAcoloumns> \      3 аргумент
