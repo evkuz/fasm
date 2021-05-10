@@ -2,8 +2,12 @@
 ; Получаем размер матриц А и В через параметр командной строки.
 
 ; Строки и столбцы тоже задаем как аргументы ком. строки.
-; ./matrix_mult_param <size of file>  <mxArows>\
-;                     <mxAcoloumns> <mxC coloumns> 
+; ./matrix_mult_param 
+;                       <size of file A in bytes>\
+;                       <mxArows>
+;                       <mxAcoloumns>==<mxBrows> \
+;                       <size of file B in bytes>
+;                       <mxC coloumns == mxBcoloumns> 
 ; 
 ; Фиксируем время начала и время окончания перемножения.
 ; Матрицы А и В считываем из файлов.
@@ -30,19 +34,24 @@
 ; ./matrix_mult_param_next 12000000 3000 1000 12000000 3000      - 50сек. ЛИТ
 ; ./matrix_mult_param_optimized 12000000 3000 1000 12000000 3000 - 41сек. ЛИТ
 ;
+; ДОбавляем последовательный обход всех матриц тут. 
+; Но сначала потестим через gemm_lods_02_4x5x3.fasm
+; Матрицы А и В в папке 4x5x3
+=======
 ; matrix_mult_param_opt_02.fasm - Заменили вычисление индекса на stosd для mxC.
 ; Также добавил вычисление и вывод на экран разницы во времени начала и конца перемножения.
 
 ; ./matrix_mult_param_opt_02 8000000 2000 1000 8000000 2000 - 15 сек. в Универе. 
 ; Т.е. замена 8 команд на stosd не сокращает время ... КАК ТАК ??????????????????????????
 ; 
-
-
 ; ДОбавляем последовательный обход всех матриц тут. Но сначала потестим через gemm_lods_02_4x5x3.fasm
-; Матрицы А и В в папке 4x5x3
 ;
 ; - Добавляем stosd ДЛя матрицы С 
 ; ./matrix_mult_param_optimized 80 4 5 60 3
+; 
+; 11.05.2021 
+; Передаем путь к папке include через переменную окружения.
+; Это важно для работы через git. Т.к. у разных разработчиков свой путь к этой папке.
 
 format ELF executable 3
 entry start
@@ -97,10 +106,12 @@ result  dd 0     ; Указатель начала. Массив с элемен
 ;---------------------------------------------
 segment readable executable
 ;section '.code' code readable executable
-include '/home/localstudent/asm/include/int_2_str.inc'
-include '/home/localstudent/asm/include/str_2_int.inc'
-include '/home/localstudent/asm/include/arg_val.inc'
-  start:
+
+include '%FASM_DIR%/include/int_2_str.inc'
+include '%FASM_DIR%/include/str_2_int.inc'
+include '%FASM_DIR%/include/arg_val.inc'
+
+start:
       push ebp
       mov  ebp, esp
 
@@ -259,7 +270,8 @@ mov ebx, mystr
 int 80h
 ; По завершении вызова получаем в eax указатель на область памяти заданного размера.
 mov [result], eax
-
+; Сразу сохраняем в edi
+;mov edi, [result]
 ;;;;;;;;;;; Начинаем перемножать
 
 
@@ -322,6 +334,10 @@ MatrixC:
           ; Переходим к следующему столбцу матрицы В, получим следующий элемент матрицы С
           ; Вот тут надо элемент матрицы С положить в массив  
           ; Вычисляем положение нового элемента относительно начала массива result
+          ; А можно ж попробовать stos ?!
+          ; Т.е. матрица С также последовательно загружается, как и для А(выгружаются)
+          ;
+          ; mov edi, [result] - НЕправильно ! Это ж цикл.
 
           ;mov eax, [mxCind]  ; result + mxCind*4 + mxArow*4*mxcolC
           ;imul eax, 4
