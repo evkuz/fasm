@@ -26,8 +26,10 @@
 ; 2000 x 1000 за 17сек.
 ; 3000 x 1000 за  сек.
 
-; ./matrix_mult_param_next 8000000 2000 1000 8000000 2000      - 19-20сек. в ЛИТ. Такое время уже можно оптимизировать.
-; ./matrix_mult_param_optimized 8000000 2000 1000 8000000 2000 - 17 сек. в ЛИТ !!!
+; matrix_mult_param_optimized.fasm - Заменили вычисление индекса на lodsd для mxA
+
+; ./matrix_mult_param_next 8000000 2000 1000 8000000 2000      - 19-20сек. в ЛИТ. (17сек. в Универе)Такое время уже можно оптимизировать.
+; ./matrix_mult_param_optimized 8000000 2000 1000 8000000 2000 - 17 сек. в ЛИТ !!! (15 сек. в Универе)
 
 ; ./matrix_mult_param_next 12000000 3000 1000 12000000 3000      - 50сек. ЛИТ
 ; ./matrix_mult_param_optimized 12000000 3000 1000 12000000 3000 - 41сек. ЛИТ
@@ -35,7 +37,16 @@
 ; ДОбавляем последовательный обход всех матриц тут. 
 ; Но сначала потестим через gemm_lods_02_4x5x3.fasm
 ; Матрицы А и В в папке 4x5x3
- 
+=======
+; matrix_mult_param_opt_02.fasm - Заменили вычисление индекса на stosd для mxC.
+; Также добавил вычисление и вывод на экран разницы во времени начала и конца перемножения.
+
+; ./matrix_mult_param_opt_02 8000000 2000 1000 8000000 2000 - 15 сек. в Универе. 
+; Т.е. замена 8 команд на stosd не сокращает время ... КАК ТАК ??????????????????????????
+; 
+; ДОбавляем последовательный обход всех матриц тут. Но сначала потестим через gemm_lods_02_4x5x3.fasm
+;
+; - Добавляем stosd ДЛя матрицы С 
 ; ./matrix_mult_param_optimized 80 4 5 60 3
 ; 
 ; 11.05.2021 
@@ -87,16 +98,20 @@ mystr   rd 6
 st_time_val  rb  4  ; start time value
 fin_time_val rb  4  ; finish time value
 str_of_time  rb 10
+time_diff    rb  4 ;= fin_time_val - st_time_val
+str_time_diff rb 5; ДЛина строки, отображающей разницу во времени перемножения.
 
 result  dd 0     ; Указатель начала. Массив с элементами новой матрицы
                        ; в словах по 4 байта
 ;---------------------------------------------
 segment readable executable
 ;section '.code' code readable executable
+
 include '%FASM_DIR%/include/int_2_str.inc'
 include '%FASM_DIR%/include/str_2_int.inc'
 include '%FASM_DIR%/include/arg_val.inc'
-  start:
+
+start:
       push ebp
       mov  ebp, esp
 
@@ -266,6 +281,8 @@ start_time_stamp:
     mov ebx, st_time_val ; pointer going to store the return value
     int 0x80
 
+; сохраняем начало массива/строки матрицы С
+ mov edi, [result]
 
  push 0 ; Далее пригодится
  mov esi, [mxA] ; кладем в источник матрцу А
@@ -322,29 +339,23 @@ MatrixC:
           ;
           ; mov edi, [result] - НЕправильно ! Это ж цикл.
 
-          mov eax, [mxCind]  ; result + mxCind*4 + mxArow*4*mxcolC
-          imul eax, 4        ; А на фига ?! ведь каждый раз адрес это result=result + 4
-          mov ecx, [mxArow]
-          imul ecx, 4       ; Умножаем на индекс строки
-          imul ecx, [mxcolC]
-          add eax, ecx
-          mov ecx, [result]
-          add ecx, eax ; Получили адрес, куда сохранить новый элемент матрицы
+          ;mov eax, [mxCind]  ; result + mxCind*4 + mxArow*4*mxcolC
+          ;imul eax, 4
+          ;mov ecx, [mxArow]
+          ;imul ecx, 4       ; Умножаем на индекс строки
+          ;imul ecx, [mxcolC]
+          ;add eax, ecx
+          ;mov ecx, [result]
+          ;add ecx, eax ; Получили адрес, куда сохранить новый элемент матрицы
 
           ; Получили адрес элемента массива, где будет храниться новое значение элемента матрицы.
-          pop ebx         ; Взяли из стека сумму - новый элмент С.
-          mov [ecx], ebx  ; сохранили значение в памяти ПО НОВОМУ АДРЕСУ
-                          ; т.е. записали новый элемент матрицы С.
-          ; Вполне должно хватить stosd. НАм не нужно абсолютное значение.
-          ; Просто пишем последовательно, адрес сам меняется.
-          ;
-          ; pop eax
-          ; stosd 
-         ;
-         ; А можно ограничиться только stosd
-         ; Для этого надо опредлиться - суммируем, а потом кладем.
-         ; или каждый раз кладем и суммируем.
+          ;pop ebx
+          ;mov [ecx], ebx  ; сохранили значение в памяти ПО НОВОМУ АДРЕСУ
  
+          ;lea eax, [result + mxCind*4 + mxArow*4] ; Так рабтает, но недостаточно
+          pop eax
+          stosd   ; Сохранили новое значение (элемент С) в EDI (result)
+
           ; Надо его сохрянять рядом с соседним элементом.
           xor eax, eax
           mov [mxAcol], eax ; индекс стоблца в матрице А Обнуляем
@@ -448,6 +459,21 @@ int 0x80            ; Вызов прерывания
   mov eax,4           ; sys_write - код 4
   mov ebx,1           ; stdout   mycommand 2>&1    0 - STDIN, 1 - STDOUT, 2 - STDERR
   mov ecx,str_of_time ; Адрес строки, т.е 1-го байта 
+  ;mov  edx,10    ; Размер строки уже в edx после завершения 'int_to_string'
+  int 0x80            ; Вызов прерывания
+
+;;;;;;;;;;;;;;;;;;; output time difference 
+  mov eax, dword [fin_time_val]
+  mov ecx, dword [st_time_val]
+  sub eax,ecx
+
+  ;mov eax, dword time_diff
+  mov edi, str_time_diff
+  call int_to_string
+  
+  mov eax,4           ; sys_write - код 4
+  mov ebx,1           ; stdout   mycommand 2>&1    0 - STDIN, 1 - STDOUT, 2 - STDERR
+  mov ecx, str_time_diff ; Адрес строки, т.е 1-го байта 
   ;mov  edx,10    ; Размер строки уже в edx после завершения 'int_to_string'
   int 0x80            ; Вызов прерывания
 
