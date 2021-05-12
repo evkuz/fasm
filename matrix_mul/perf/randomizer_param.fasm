@@ -1,4 +1,3 @@
-; Создаем файл двоичных данных при помощи генератора случайных чисел
 ; В случае, когда надо сгенерить файл большого размера, скажем 4млн. байт, результирующий
 ; файл будет около 8 Мбайт., т.е. память резервируется в самом исполняемом файле, что не есть гуд.
 ; Чтобы избежать большого размера программы при генерации больших матриц будем размер считывать как Ввод
@@ -22,7 +21,6 @@ hFile dd 0
 BytesRead dd 0
 BytesWritten dd 0
 NULL equ 0
-
 
 out_message      db 'Some random value : %u',0
 wrong_count_mess db 'This utility gets only 1 argument - size of file in bytes'
@@ -57,7 +55,7 @@ mystr rd 6
 
 ;section '.code' code readable executable
 segment readable executable
-include '/home/localstudent/asm/include/str_2_int.inc'
+include '%FASM_DIR%/include/str_2_int.inc'
 start:
         push    ebp
         mov     ebp,esp

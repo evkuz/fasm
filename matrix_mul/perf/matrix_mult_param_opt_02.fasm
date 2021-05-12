@@ -104,7 +104,6 @@ include '%FASM_DIR%/include/arg_val.inc'
 start:
       push ebp
       mov  ebp, esp
-
 ; Парсим аргумент командной строки, определяем размер матриц А И В.
 ; Получаем значение аргумента №1 - размер файла
        mov eax,[ebp+4]     ;argc
@@ -272,7 +271,7 @@ start_time_stamp:
 ; сохраняем начало массива/строки матрицы С
  mov edi, [result]
 
- push 0 ; Далее пригодится
+ push 0 ; Начальное значение суммы
  mov esi, [mxA] ; кладем в источник матрцу А
  matrixA:
 
@@ -349,7 +348,7 @@ MatrixC:
           mov [mxAcol], eax ; индекс стоблца в матрице А Обнуляем
           mov [mxBrow], eax    ; индекс строки в матрице В Обнуляем
 
-         ; pop eax ;;;;;;;;;;;;; avoid stack overflow 
+          ;pop eax ;;;;;;;;;;;;; avoid stack overflow 
           ;;;;;;;;;;; переносим esi на начало нужной строки
            mov ebx, [mxArow] ; индекс строки Матрица А
            imul ebx, 4
