@@ -35,6 +35,9 @@
 ; ./matrix_mult_param_next 12000000 3000 1000 12000000 3000      - 50сек. ЛИТ
 ; ./matrix_mult_param_optimized 12000000 3000 1000 12000000 3000 - 41сек. ЛИТ
 
+; Сравнил с ./matrix_mult_param_optimized 24000000 3000 2000 24000000 3000
+; Время 96 сек. вместо 93.
+
  
 
 format ELF executable 3
@@ -88,9 +91,9 @@ result  dd 0     ; Указатель начала. Массив с элемен
 ;---------------------------------------------
 segment readable executable
 ;section '.code' code readable executable
-include '/home/localstudent/asm/include/int_2_str.inc'
-include '/home/localstudent/asm/include/str_2_int.inc'
-include '/home/localstudent/asm/include/arg_val.inc'
+include '%FASM_DIR%/include/int_2_str.inc'
+include '%FASM_DIR%/include/str_2_int.inc'
+include '%FASM_DIR%/include/arg_val.inc'
   start:
       push ebp
       mov  ebp, esp
