@@ -57,7 +57,8 @@ mystr rd 6
 
 ;section '.code' code readable executable
 segment readable executable
-include '/home/evkuz/asm/str_2_int.inc'
+;include '/home/evkuz/asm/str_2_int.inc'
+include '%FASM_DIR%/include/str_2_int.inc'
 start:
         push    ebp
         mov     ebp,esp
