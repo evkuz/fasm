@@ -1,0 +1,85 @@
+; Подготовка данных для инструкций SIMD
+; Зписываем массив чисел в файлы X, Y
+; 
+
+
+format ELF executable 3
+entry start
+
+
+segment readable writeable
+
+FilePath_X db 'data_X.bin',0 ; Файл с данными матрицы А
+FilePath_Y db 'data_Y.bin',0 ; Файл с данными матрицы В
+
+X_descriptor dd 0
+Y_descriptor dd 0
+
+Buffer_size_X dd 16 ; Размер матрицы А в байтах
+Buffer_size_Y dd 16 ; Размер матрицы В в байтах
+
+
+X dd 0x12345678, 0x23456789, 0x3456789A, 0x456789AB
+;X2 dd 0x2345
+;X3 dd 0x3456
+;X4 dd 0x4567
+
+Y dd 0x56789ABC, 0x6789ABCD, 0x789ABCDE, 0x89ABCDEF
+
+;Y1 dd 0x5678
+;Y2 dd 0x6789
+;Y3 dd 0x789X
+;Y4 dd 0x89XY
+
+segment readable executable
+
+start:
+
+;;;;;;;;;;;;; CREXTE FILE with X elements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,0x08            ; create file
+mov ebx,FilePath_X      ; ebx filename
+mov ecx,0x1b4           ; permissions value
+int 80h
+
+mov [X_descriptor], eax              ; file descriptor to ebx
+
+;;;;;;;;;;;;; CREXTE FILE with Y elements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,0x08            ; create file
+mov ebx,FilePath_Y      ; ebx filename
+mov ecx,0x1b4           ; permissions value
+int 80h
+
+mov [Y_descriptor], eax              ; file descriptor to ebx
+
+
+
+;;;;;;;;;;;;; WRITE TO FILE X-elements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax, 0x04           ; write to file
+mov ebx, [X_descriptor]
+mov ecx, X      ; address of data 
+mov edx, [Buffer_size_X]          ; size (amount) of data
+int 80h          
+ 
+
+;;;;;;;;;;;;; WRITE TO FILE Y-elements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax, 0x04           ; write to file
+mov ebx, [Y_descriptor]
+mov ecx, Y      ; address of data 
+mov edx, [Buffer_size_Y]           ; size (amount) of data
+int 80h          
+      
+;;;;;;;;;;;;; CLOSE FILE X_descriptor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,06h            ; close file
+mov ebx, [X_descriptor]
+int 80h 
+
+;;;;;;;;;;;;; CLOSE FILE Y_descriptor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,06h            ; close file
+mov ebx, [Y_descriptor]
+int 80h 
+
+; now exit
+exit:
+  mov eax, 1
+  xor ebx,ebx         ; exit code == 0
+  int 0x80   

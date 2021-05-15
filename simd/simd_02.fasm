@@ -1,0 +1,60 @@
+format ELF executable 3
+entry start
+
+
+segment readable writeable
+
+FilePath_X db 'data_X.bin',0 ; Файл с данными матрицы А
+FilePath_Y db 'data_Y.bin',0 ; Файл с данными матрицы В
+
+Buffer_size_X dd 16 ; Размер матрицы А в байтах
+Buffer_size_Y dd 16 ; Размер матрицы В в байтах
+
+
+X rd 8
+Y rd 8
+
+
+segment readable executable
+
+start:
+;;;;;;;;;;;;; OPEN FILE Matrix X  ;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,0x05
+mov ebx,FilePath_X
+mov ecx,0 ; O_RDONLY        =       00
+mov edx,0  ; file already exists so no more options
+
+int 80h
+
+mov ebx,eax              ; file descriptor to ebx
+;;;;;;;;;;;;; REXD FROM FILE Matrix X ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax, 0x03           ; read from file
+mov ecx, X        ; address of data 
+mov edx, Buffer_size_X            ; size (amount) of data
+int 80h
+
+; Считываем данные из файла в массив матрицы Y  - mxY
+;;;;;;;;;;;;; OPEN FILE Matrix Y  ;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,0x05
+mov ebx,FilePath_Y
+mov ecx,0 ; O_RDONLY        =       00
+mov edx,0  ; file already exists so no more options
+
+int 80h
+
+mov ebx,eax              ; file descriptor to ebx
+;;;;;;;;;;;;; REXD FROM FILE Matrix Y ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax, 0x03           ; read from file
+mov ecx, Y       ; address of data 
+mov edx, Buffer_size_Y            ; size (amount) of data
+int 80h
+
+
+
+; now exit
+exit:
+	mov eax, 1
+	xor	ebx,ebx         ; exit code == 0
+	int 0x80   
+
+

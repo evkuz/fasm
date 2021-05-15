@@ -20,6 +20,7 @@ B_descriptor dd 0
 ;Buffer rb 500000
 Buffer_size_A dd 80 ; Размер матрицы А в байтах
 Buffer_size_B dd 60 ; Размер матрицы В в байтах
+
 ;Buffer.size_ABuffer.size_C dd 32 ; Размер матрицы С в байтах
 ;Buffer.size dd 100  ;equ ($ - Buffer) ; Calculates the size at compile time
 ;Buffer_C dd 40000
