@@ -7,7 +7,7 @@ plan_sem_08
   
 03. ./mx_exchange_param.sh 8000000
 
-04. matrix_mult_param_next.fasm
+04. matrix_mult_param_next.fasm  18-19 секунд (Uni)
 
-05. gemm_opt_02.fasm
+05. gemm_opt_02.fasm  15 секунд.  (Uni)
 

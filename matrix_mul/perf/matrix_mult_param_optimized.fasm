@@ -27,11 +27,16 @@
 ; 2000 x 1000 за 17сек.
 ; 3000 x 1000 за  сек.
 
-; ./matrix_mult_param_next 8000000 2000 1000 8000000 2000      - 19-20сек. в ЛИТ. Такое время уже можно оптимизировать.
-; ./matrix_mult_param_optimized 8000000 2000 1000 8000000 2000 - 17 сек. в ЛИТ !!!
+; matrix_mult_param_optimized.fasm - Заменили вычисление индекса на lodsd для mxA
+
+; ./matrix_mult_param_next 8000000 2000 1000 8000000 2000      - 19-20сек. в ЛИТ. (17сек. в Универе)Такое время уже можно оптимизировать.
+; ./matrix_mult_param_optimized 8000000 2000 1000 8000000 2000 - 17 сек. в ЛИТ !!! (15 сек. в Универе)
 
 ; ./matrix_mult_param_next 12000000 3000 1000 12000000 3000      - 50сек. ЛИТ
 ; ./matrix_mult_param_optimized 12000000 3000 1000 12000000 3000 - 41сек. ЛИТ
+
+; Сравнил с ./matrix_mult_param_optimized 24000000 3000 2000 24000000 3000
+; Время 96 сек. вместо 93.
 
  
 
@@ -86,9 +91,9 @@ result  dd 0     ; Указатель начала. Массив с элемен
 ;---------------------------------------------
 segment readable executable
 ;section '.code' code readable executable
-include '/home/evkuz/asm/include/int_2_str.inc'
-include '/home/evkuz/asm/include/str_2_int.inc'
-include '/home/evkuz/asm/include/arg_val.inc'
+include '%FASM_DIR%/include/int_2_str.inc'
+include '%FASM_DIR%/include/str_2_int.inc'
+include '%FASM_DIR%/include/arg_val.inc'
   start:
       push ebp
       mov  ebp, esp

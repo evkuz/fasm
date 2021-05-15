@@ -1,8 +1,10 @@
-; 
+; gemm_opt_02.fasm Вспоминаем статью "A Sandbox for Optimizing GEMM"
+; Вот откуда пошло GEMM
+
 ; Получаем размер матриц А и В через параметр командной строки.
 
 ; Строки и столбцы тоже задаем как аргументы ком. строки.
-; ./matrix_mult_param \
+; ./gemm_opt_02.fasm \
 ;  <size of file A>  \  1 аргумент
 ;  <mxArows>  \         2 аргумент
 ;  <mxAcoloumns> \      3 аргумент
@@ -75,9 +77,9 @@ result  dd 0     ; Указатель начала. Массив с элемен
 ;---------------------------------------------
 segment readable executable
 ;section '.code' code readable executable
-include '../include/int_2_str.inc'
-include '../include/str_2_int.inc'
-include '../include/arg_val.inc'
+include '%FASM_DIR%/include/int_2_str.inc'
+include '%FASM_DIR%/include/str_2_int.inc'
+include '%FASM_DIR%/include/arg_val.inc'
   start:
       push ebp
       mov  ebp, esp
@@ -296,6 +298,7 @@ MatrixC:
           ; Переходим к следующему столбцу матрицы В, получим следующий элемент матрицы С
           ; Вот тут надо элемент матрицы С положить в массив  
           ; Вычисляем положение нового элемента относительно начала массива result
+          ;
 
           mov eax, [mxCind]  ; result + mxCind*4 + mxArow*4*mxcolC
           imul eax, 4
@@ -321,6 +324,11 @@ MatrixC:
            imul ebx, 4
            imul ebx, [mxrB] ; mxrB - количество столбцов в mxA
                             ; в начало нужной строки
+; А ведь это всего лишь следующий элемент в матрице А ! и его не надо вычислять
+; И при выполнении последней операции esi уже с нужным адресом.
+; Нужно сравнить результаты !
+
+
 
           mov esi, [mxA];
           add esi, ebx ; Указатель на начало нужной строки
