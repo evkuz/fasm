@@ -1,0 +1,35 @@
+; Проверяем значение переменной "$?", хранящей код возврата последней операции. 
+; $?
+
+
+format ELF executable 3
+entry start
+
+
+segment readable writeable
+
+X dd 0x1234, 0x2345, 0x3456, 0x4567
+;X2 dd 0x2345
+;X3 dd 0x3456
+;X4 dd 0x4567
+
+Y dd 0x5678, 0x6789, 0x789A, 0x89AB
+
+;Y1 dd 0x5678
+;Y2 dd 0x6789
+;Y3 dd 0x789A
+;Y4 dd 0x89AB
+
+segment readable executable
+
+start:
+
+	mov eax, 1
+	mov ebx, 42
+;	sub ebx, 29
+	int 0x80      
+
+; в терминале вводим: 
+; ./simple
+; echo $?
+; Получаем вывод 42 - наш код возврата из ebx
