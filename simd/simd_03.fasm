@@ -1,0 +1,35 @@
+format ELF executable 3
+entry start
+
+segment readable writeable
+
+
+X dq 0x1234567823456789, 0x3456789A456789AB
+
+Y dq 0x56789ABC6789ABCD, 0x789ABCDE89ABCDEF
+
+segment readable executable
+
+start:
+mov esi, X
+
+movq mm0,[esi]       ; mm0 = 0x1234 5678 2345 6789
+packssdw mm0,mm0     ; mm0 = 0x7fff 7fff 7fff 7fff
+
+movq mm1, [Y]        ; mm1 = 0x56789ABC6789ABCD
+packssdw mm1, mm1
+
+;pmaddwd mm0,mm1      ; mm0 = 0xe3f1 b080 ec36 0ea2 (если без packssdw mm0,mm0)
+
+pmaddwd mm0,mm1      ; mm0 = 
+
+packssdw mm2,mm1
+packssdw mm1,mm1
+
+; now exit
+exit:
+	mov eax, 1
+	xor	ebx,ebx         ; exit code == 0
+	int 0x80   
+
+

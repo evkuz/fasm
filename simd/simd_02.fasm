@@ -1,3 +1,10 @@
+; simd_02
+; Считываем данные из файла, применяем pmaddwd
+; simd_01
+; Подготовка данных для инструкций SIMD
+; Зписываем массив чисел в файлы X, Y
+; 
+
 format ELF executable 3
 entry start
 
@@ -7,15 +14,20 @@ segment readable writeable
 FilePath_X db 'data_X.bin',0 ; Файл с данными матрицы А
 FilePath_Y db 'data_Y.bin',0 ; Файл с данными матрицы В
 
-Buffer_size_X dd 16 ; Размер матрицы А в байтах
-Buffer_size_Y dd 16 ; Размер матрицы В в байтах
+Buffer_size_X db 16 ; Размер матрицы А в байтах
+Buffer_size_Y db 16 ; Размер матрицы В в байтах
 
 
-X rd 8
-Y rd 8
+X rq 4
+Y rq 4 
+Xaddr dd 4
+Yaddr dd 4
 
+hexstr db 9
 
 segment readable executable
+include '%FASM_DIR%/include/int_2_str.inc'
+include '%FASM_DIR%/include/hex-dword-2-str.inc'
 
 start:
 ;;;;;;;;;;;;; OPEN FILE Matrix X  ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -27,11 +39,17 @@ mov edx,0  ; file already exists so no more options
 int 80h
 
 mov ebx,eax              ; file descriptor to ebx
-;;;;;;;;;;;;; REXD FROM FILE Matrix X ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;; READ FROM FILE Matrix X ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 mov eax, 0x03           ; read from file
-mov ecx, X        ; address of data 
-mov edx, Buffer_size_X            ; size (amount) of data
+mov ecx, X              ; address of data 
+mov edx, Buffer_size_X  ; size (amount) of data
 int 80h
+
+;;;;;;;;;;;;; CLOSE FILE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,06h            ; close file
+int 80h
+
+
 
 ; Считываем данные из файла в массив матрицы Y  - mxY
 ;;;;;;;;;;;;; OPEN FILE Matrix Y  ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -43,12 +61,49 @@ mov edx,0  ; file already exists so no more options
 int 80h
 
 mov ebx,eax              ; file descriptor to ebx
-;;;;;;;;;;;;; REXD FROM FILE Matrix Y ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;; READ FROM FILE Matrix Y ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 mov eax, 0x03           ; read from file
 mov ecx, Y       ; address of data 
 mov edx, Buffer_size_Y            ; size (amount) of data
 int 80h
 
+;;;;;;;;;;;;; CLOSE FILE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov eax,06h            ; close file
+int 80h
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;; start SIMD
+pxor mm0,mm0
+pxor mm1,mm1
+
+;mov dword Xaddr, dword X
+;mov dword Yaddr, dword Y 
+
+;DEST[31:0] ← (DEST[15:0] ∗ SRC[15:0]) + (DEST[31:16] ∗ SRC[31:16]);
+;DEST[63:32] ← (DEST[47:32] ∗ SRC[47:32]) + (DEST[63:48] ∗ SRC[63:48]);
+
+mov eax, dword [X]
+movq mm0, [X] ; mm0= 0x2345 6789 1234 5678
+movq mm1, [Y] ; mm1= 0x6789 abcd 5678 9abc
+paddd mm2,mm0
+pmaddwd mm0,mm1 ; mm0=0xec360ea2 e3f1b080 
+paddd mm7,mm0   ; mm7= 0xec360ea2 e3f1b080
+
+ 
+
+emms            ; finish with mmx instructions
+
+; src - mm1, dest - mm0
+;
+;DEST[31:0] = (0x5678 * 0x9abc) + (0x1234 * 0x5678) = 3A69B080 (3443B020 + 6260060)
+;DEST[63:32]= (0x6789 * 0xabcd) + (0x2345 * 0x6789) = 53BF0EA2 (457B6BB5 + E43A2ED)
+;mm0 = 0x53BF0EA2 3A69B080
+
+; mm0 = 0x1234 5678 2345 6789
+; mm1 = 0x5678 9abc 6789 abcd
+
+;DEST[31:0] = (0x6789 * 0xabcd) + (0x2345 * 0x6789) = 53BF0EA2 (457B6BB5 + E43A2ED)
+;DEST[63:32]= (0x5678 * 0x9abc) + (0x1234 * 0x5678) = 3A69B080 (6260060 + 3443B020)
 
 
 ; now exit

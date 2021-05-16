@@ -2,9 +2,17 @@
 ; scans data with lodsd and observe them in debugger
 format ELF executable 3
 entry start
+;*********** here the variables ***********************
+segment readable writeable
+f db 'c.bin',0 ; 0 обязательно.
+hexstr db 9
+somedata rb 36
+sz = 36
+
 
 segment readable executable
-include 'int_2_str.inc'
+include '%FASM_DIR%/include/int_2_str.inc'
+include '%FASM_DIR%/include/hex-dword-2-str.inc'
 start:
 ;;;;;;;;;;;;; CREATE FILE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;mov eax,0x08            ; create file
@@ -27,16 +35,30 @@ mov ecx,somedata        ; address of data
 mov edx,sz              ; size (amount) of data
 int 80h
 
-;;;;;;;;;;; output data to console
-mov ecx, 8
-mov esi, somedata
-repnz lodsd 
-;call int_to_string
-
-
 ;;;;;;;;;;;;; CLOSE FILE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 mov eax,06h            ; close file
 int 80h
+
+;;;;;;;;;;; output data to console
+;mov ecx, 36
+;mov esi, somedata
+;lodsd
+;lodsd
+
+    mov eax, dword [somedata + 4]
+    mov edi, hexstr
+    call hex_dword_2_str
+    ;mov edi, hexstr
+    ;mov [edi + 8], byte 0xA
+    mov [hexstr +8], byte 0xA
+
+    mov eax,4
+    mov ebx,1
+    mov ecx, hexstr
+    mov edx,9
+    int 0x80
+
+
 
 
 
@@ -44,8 +66,3 @@ int 80h
 mov eax,1
 int 80h
 
-;*********** here the variables ***********************
-segment readable writeable
-f db 'c.bin',0 ; 0 обязательно.
-somedata rb 32
-sz = 32

@@ -94,6 +94,10 @@ mov edx, Buffer_size_B            ; size (amount) of data
 int 80h
 
 
+mov esi, mxA
+lodsd
+lodsd
+
 ; Получить время начала работы процесса 
 start_time_stamp:
     mov eax, 13
