@@ -4,6 +4,15 @@
 format ELF executable 3
 entry start
 
+segment readable writeable
+
+msg db 'Ascii view of hex value is ',0xA
+msg_size = $-msg
+
+hexdata dd 0xABCD7A4f
+hexstr db 9
+sz_hexstr = $ - hexstr
+
 segment readable executable
 include 'hex-dword-2-str.inc'
 
@@ -12,7 +21,9 @@ start:
     mov eax, [hexdata]
     mov edi, hexstr
     call hex_dword_2_str
-
+    ;mov edi, hexstr
+    ;mov [edi + 8], byte 0xA
+    mov [hexstr +8], byte 0xA
     
 	mov	eax,4           ; sys_write - код 4
 	mov	ebx,1           ; stdout   mycommand 2>&1    0 - STDIN, 1 - STDOUT, 2 - STDERR
@@ -24,7 +35,7 @@ start:
     mov eax,4
     mov ebx,1
     mov ecx, hexstr
-    mov edx,8
+    mov edx,9
     int 0x80
 
 ; now exit
@@ -34,11 +45,3 @@ exit:
 	int 0x80   
 
 
-segment readable writeable
-
-msg db 'Ascii view of hex value is ',0xA
-msg_size = $-msg
-
-hexdata dd 0xABCD7A4f
-hexstr db 8
-sz_hexstr = $ - hexstr

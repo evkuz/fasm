@@ -45,7 +45,7 @@ result  dd 0     ; Массив с элементами новой матриц�
 ;---------------------------------------------
 segment readable executable
 ;section '.code' code readable executable
-include '/home/localstudent/asm/int_2_str.inc'
+include '%FASM_DIR%/include/int_2_str.inc'
   start:
       push ebp
       mov  ebp, esp

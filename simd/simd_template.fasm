@@ -1,0 +1,23 @@
+format ELF executable 3
+entry start
+
+segment readable writeable
+
+
+X dd 0x12345678, 0x23456789, 0x3456789A, 0x456789AB
+
+Y dd 0x56789ABC, 0x6789ABCD, 0x789ABCDE, 0x89ABCDEF
+
+segment readable executable
+
+start:
+
+
+
+; now exit
+exit:
+	mov eax, 1
+	xor	ebx,ebx         ; exit code == 0
+	int 0x80   
+
+
