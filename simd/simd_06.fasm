@@ -4,9 +4,9 @@ entry start
 segment readable writeable
 
 
-X dd 0x12345678, 0x23456789, 0x3456789A, 0x456789AB
+X dq 0x0000123400005678 ;, 0x23456789, 0x3456789A, 0x456789AB
 
-Y dd 0x56789ABC, 0x6789ABCD, 0x789ABCDE, 0x89ABCDEF
+Y dq 0x0000567800009ABC;, 0x6789ABCD, 0x789ABCDE, 0x89ABCDEF
 
 hexstr db 9
 
@@ -16,11 +16,11 @@ include '%FASM_DIR%/include/hex-dword-2-str.inc'
 
 start:
 
-movd mm0, [X]    ; mm0 = 0x1234 5678
-movd mm1, [Y]    ; mm1 = 0x5678 9abc
+movq mm0, [X]    ; mm0 = 0x1234 5678
+movq mm1, [Y]    ; mm1 = 0x5678 9abc
 
-movd mm2, [X]    ; mm0 = 0x1234 5678
-movd mm3, [Y]    ; mm1 = 0x5678 9abc
+movq mm2, [X ]    ; mm0 = 0x1234 5678
+movq mm3, [Y]    ; mm1 = 0x5678 9abc
 
 ;packssdw mm4, mm0 ; m4 = 
 ;packssdw mm5, mm1 ; m5 = 
@@ -37,7 +37,10 @@ movd mm3, [Y]    ; mm1 = 0x5678 9abc
 ; 0x3443 = 0011 0100 0100 011
 ; 0xddcb = 1101 1101 1100 1011
 
+;shl mm0 16
+;psllw mm0, 16
 pmaddwd mm0,mm1  ; mm0 = 0x0000 0000 e3f1 b080
+pmaddwd mm2, mm3
 ;movd esi, mm0
 
 
@@ -54,6 +57,20 @@ movd eax,  mm0
     mov edx,9
     int 0x80
 
+
+
+movd eax,  mm2
+
+    mov edi, hexstr
+    call hex_dword_2_str
+    
+    mov [hexstr +8], byte 0xA
+
+    mov eax,4
+    mov ebx,1
+    mov ecx, hexstr
+    mov edx,9
+    int 0x80
 
 
 ; now exit
