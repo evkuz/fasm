@@ -13,5 +13,8 @@
 !incl*
 !matrix*
 !sim*
+simd/*
+#!simd
+!simd/*.fasm
 
 

@@ -5,10 +5,7 @@ segment readable executable
 entry $
 
 
-    rdtscp
-    
-
-	mov	edx,msg_size	; CPU zero extends 32-bit operation to 64-bit
+    mov	edx,msg_size	; CPU zero extends 32-bit operation to 64-bit
 				        ; we can use less bytes than in case mov rdx,...
 	lea	rsi,[msg]
 	mov	edi,1		; STDOUT

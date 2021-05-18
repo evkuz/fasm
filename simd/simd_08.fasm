@@ -1,0 +1,79 @@
+; simd_08 
+; Изучаем инструкции сложения, упаковки.
+; НАдо сравнить через rdtsc c обычными регистрами - не ММХ.
+;
+;
+;
+
+
+format ELF executable 3
+entry start
+
+segment readable writeable
+
+
+X dq 0x000055550000AAAA, 0x001055550010AAAA;0x12345678, 0x23456789, 0x3456789A, 0x456789AB
+
+Y dq 0x0000577700003331;0x56789ABC, 0x6789ABCD, 0x789ABCDE, 0x89ABCDEF
+
+Z dd 0x00006666, 0x00306666
+index dd 8
+
+result rq 10
+
+mas1 dw 1, 20000, 30000, 40000, 100, 40000, 3, 50000, 6000
+mas2 dw 2, 40000, 50000, 25538, 200, 40000, 1,     0, 60000
+len1 = ($ - mas2)/2
+
+segment readable executable
+
+start:
+
+call zero_mmx
+
+movq mm0, [X]    ; mm0 = 
+packssdw mm1,mm0 ; Переполнения, т.к. AAAA > 7fff
+
+
+movq mm2, [Y]
+movd mm3, [Z]
+packssdw mm3,mm2
+
+call zero_mmx
+movq mm2, [Y]
+movd mm3, [Z +4] ; Прибавляем в байтах, хотя операция с 2х-словами
+packssdw mm3,mm2
+
+
+;;;;;;;;;;;;;;;; Теперь сложение ;;;;;;;;;;;;;;;;
+mov esi, mas1
+mov edi, mas2
+mov ecx, len1 ; Счетчик цикла
+
+CYCLE:
+; index =0
+movq mm0, qword[esi]
+paddw mm0, qword [edi]
+movq [result], mm0
+
+add esi, 8
+add edi, 8
+; index +=8
+;loop
+
+ 
+ 
+
+; now exit
+exit:
+	mov eax, 1
+	xor	ebx,ebx         ; exit code == 0
+	int 0x80   
+
+zero_mmx:
+pxor mm0,mm0
+pxor mm1,mm1
+pxor mm2,mm2
+pxor mm3,mm3
+ret
+
