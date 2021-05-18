@@ -84,6 +84,7 @@ pxor mm1,mm1
 
 mov eax, dword [X]
 movq mm0, [X] ; mm0= 0x2345 6789 1234 5678
+;movd mm0, [X]
 movq mm1, [Y] ; mm1= 0x6789 abcd 5678 9abc
 paddd mm2,mm0
 pmaddwd mm0,mm1 ; mm0=0xec360ea2 e3f1b080 

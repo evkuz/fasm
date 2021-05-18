@@ -7,9 +7,9 @@ entry start
 segment readable writeable
 
 
-X dq 0x5555AAAA6666BBBB;0x12345678, 0x23456789, 0x3456789A, 0x456789AB
+X dq 0x5555AAAA6666BBBB;
 
-Y dq 0x3333111122224444;0x56789ABC, 0x6789ABCD, 0x789ABCDE, 0x89ABCDEF
+Y dq 0x3333111122225555;
 
 segment readable executable
 
@@ -19,7 +19,9 @@ pxor mm0,mm0
 pxor mm1,mm1
 
 movq mm0, [X]
-paddw mm0, [Y]
+movq mm1, [X]
+movq mm2, [Y]
+paddw mm0, [Y] ; mm0 = 8888 BBBB 8888 FFFF
 
 
 ; now exit
