@@ -1,0 +1,88 @@
+; simd_07
+; Тут пробуем другой набор данных  0x12345678 * 0x73569ABC
+; Вручную результат 0x3C77 2998 а через pmaddwd - 0xe5ff 2998
+
+format ELF executable 3
+entry start
+
+segment readable writeable
+
+
+X dd 0x12345678 ;, 0x23456789, 0x3456789A, 0x456789AB
+
+Y dd 0x73569ABC;, 0x6789ABCD, 0x789ABCDE, 0x89ABCDEF
+
+hexstr db 9
+
+segment readable executable
+include '%FASM_DIR%/include/hex-dword-2-str.inc'
+
+
+start:
+
+movd mm0, [X]    ; mm0 = 0x1234 5678
+movd mm1, [Y]    ; mm1 = 0x7356 9ABC
+
+movd mm2, [X]   ; mm0 = 0x1234 5678
+movd mm3, [Y]    ; mm1 = 0x7356 9ABC
+
+;packssdw mm4, mm0 ; m4 = 
+;packssdw mm5, mm1 ; m5 = 
+
+pmullw mm0,mm1    ; mm0 = 0x0000 0000 0060 b020 sum= 0060 + b020 = 0xb080
+pmulhw mm2,mm3    ; mm2 = 0x0000 0000 0626 ddcb sum= 0626 + ddcb = 0xe3f1 
+
+;paddd mm2,mm3
+; Если данные не упакованы, обычная арифметика.
+;0x5678 * 0x9abc = 0x3443 b020 == (22136 * 39612) = 876 851 232
+;0x1234 * 0x7536 = 0x0833 7978
+
+; 0x8337978+0x3443B020 = 3C772998 but the fasm gets to 0xe5ff 2998
+;
+
+; 0x3443 = 0011 0100 0100 011
+; 0xddcb = 1101 1101 1100 1011
+
+;shl mm0 16
+;psllw mm0, 16
+pmaddwd mm0,mm1  ; mm0 = 0x0000 0000 
+pmaddwd mm2, mm3
+;movd esi, mm0
+
+
+movd eax,  mm0
+
+    mov edi, hexstr
+    call hex_dword_2_str
+    
+    mov [hexstr +8], byte 0xA
+
+    mov eax,4
+    mov ebx,1
+    mov ecx, hexstr
+    mov edx,9
+    int 0x80
+
+
+
+movd eax,  mm2
+
+    mov edi, hexstr
+    call hex_dword_2_str
+    
+    mov [hexstr +8], byte 0xA
+
+    mov eax,4
+    mov ebx,1
+    mov ecx, hexstr
+    mov edx,9
+    int 0x80
+
+
+; now exit
+exit:
+	mov eax, 1
+	xor	ebx,ebx         ; exit code == 0
+	int 0x80   
+
+
