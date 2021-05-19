@@ -8,12 +8,16 @@
 !*.*
 !*/*
 !*/*.*
-!sem_*
+!sem_08
+sem_08/*.*
+!sem_08/*.fasm
 !float/
 !incl*
-!matrix*
+!matrix_mul/*.fasm
+!matrix_mul/perf/*.fasm
 !sim*
 simd/*
+
 #!simd
 !simd/*.fasm
 
