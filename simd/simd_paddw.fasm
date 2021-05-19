@@ -11,6 +11,8 @@ X dq 0x5555AAAA6666BBBB;
 
 Y dq 0x3333111122225555;
 
+Z dw 0x00001111
+
 segment readable executable
 
 start:
@@ -22,6 +24,10 @@ movq mm0, [X]
 movq mm1, [X]
 movq mm2, [Y]
 paddw mm0, [Y] ; mm0 = 8888 BBBB 8888 FFFF
+
+;################### now get wraparound
+
+;paddw mm0, qword [Z]
 
 
 ; now exit
