@@ -1,4 +1,4 @@
-;simd_pmadd
+;simd_pmadd.fasm
 ;
 
 format ELF executable 3
@@ -9,7 +9,7 @@ segment readable writeable
 
 X dq 0x5555AAAA6666BBBB;
 
-Y dq 0x3333111122225555;
+Y dq 0x3333111122224444;
 
 Z dw 0x00001111
 

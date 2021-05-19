@@ -1,0 +1,59 @@
+;simd_pmaddwd_01.fasm 
+;Простая комбинация данных
+;
+;
+;
+format ELF executable 3
+entry start
+
+segment readable writeable
+
+
+X dd 0x12345678, 0x23456789, 0x3456789A, 0x456789AB
+
+Y dd 0x53537426, 0x6789ABCD, 0x789ABCDE, 0x89ABCDEF
+
+hexstr db 9
+
+segment readable executable
+include '%FASM_DIR%/include/hex-dword-2-str.inc'
+
+
+start:
+
+movd mm0, [X]    ; mm0 = 0x1234 5678
+movd mm1, [Y]    ; mm1 = 0x5353 7426
+
+movd mm2, [X]    ; mm0 = 0x1234 5678
+movd mm3, [Y]    ; mm1 = 0x5353 7426
+
+; 
+;0x5678 * 0x7426 = 273B 35D0   35D0+C2DC = F8AC
+;0x1234 * 0x5353 = 05EC C2DC   5EC+273B  = 2D27
+;
+
+pmaddwd mm0,mm1  ; mm0 = 0x0000 0000 2d27 f8ac
+
+
+movd eax,  mm0
+
+    mov edi, hexstr
+    call hex_dword_2_str
+    
+    mov [hexstr +8], byte 0xA
+
+    mov eax,4
+    mov ebx,1
+    mov ecx, hexstr
+    mov edx,9
+    int 0x80
+
+
+
+; now exit
+exit:
+	mov eax, 1
+	xor	ebx,ebx         ; exit code == 0
+	int 0x80   
+
+
