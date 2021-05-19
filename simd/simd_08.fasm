@@ -16,6 +16,9 @@ X dq 0x000055550000AAAA, 0x001055550010AAAA;0x12345678, 0x23456789, 0x3456789A, 
 
 Y dq 0x0000577700003331;0x56789ABC, 0x6789ABCD, 0x789ABCDE, 0x89ABCDEF
 
+XB dq 0x0022003300440055
+YB dq 0x005A005B006C006D
+
 Z dd 0x00006666, 0x00306666
 index dd 8
 
@@ -31,13 +34,20 @@ start:
 
 call zero_mmx
 
-movq mm0, [X]    ; mm0 = 
+movq mm2, [XB] ; mm2 = 0022 0033 0044 0055
+MOVQ MM3, [YB] ; mm3 = 005A 005B 006C 006D
+MOVQ MM4, [YB]
+packsswb mm4,mm2 ; mm4 = 2233 4455 5A5B 6C6D
+
+call zero_mmx
+
+movq mm0, [X]    ; mm0 = 0000 5555 0000 AAAA
 packssdw mm1,mm0 ; Переполнения, т.к. AAAA > 7fff
 
 
-movq mm2, [Y]
-movd mm3, [Z]
-packssdw mm3,mm2
+;movq mm2, [Y]
+;movd mm3, [Z]
+;packssdw mm3,mm2
 
 call zero_mmx
 movq mm2, [Y]
