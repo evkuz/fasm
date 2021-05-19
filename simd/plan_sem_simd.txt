@@ -1,0 +1,8 @@
+plan_sem_simd
+
+
+1. simd_pmadd.fasm      - выполняем "нормальное" умножение и "с обрезанием". Меняем 4444 на 5555 в младшем слове.
+2. simd_packsswb.fasm   - packsswb - на байтах. Со словами сложнее. Также складываем 2 массива padddw.
+3. simd_pmaddwd_01.fasm - Операция pmaddwd - "простой" случай.
+4. simd_pmaddwd_02.fasm - pmaddwd - особый случай.
+
