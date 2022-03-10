@@ -9,12 +9,12 @@ segment readable executable
 
 start:
     ; Сравниваем разные части строк +8 или +4 байта.
-	mov esi, str_1 + 4 ; 
-	mov edi, str_2 + 4
-	lodsd ; put on EAX 4 bytes - needed for scas
+	mov esi, str_1 + 8 ; 
+	mov edi, str_2 + 8
+	lodsd ; put on EAX 4 bytes - needed for scas - FROM string ESI to EAX
 	;cmps dword [esi], [edi] ; Подсветка ???
     ;scasw                   ; Подсветка работает
-	scas dword [edi]         ; Подсветка ???
+	scas dword [edi]         ; Подсветка ??? Compare eax with edi
     jne Not_equal
     
     ;CLOCK_REALTIME
@@ -45,10 +45,10 @@ Not_equal:
 
 segment readable writeable
 
-str_1 db '123456781234',0xA
+str_1 db '123456784321',0xA
 str_1_size = $-str_1
 
-str_2 db '1234dfgh1234',0xA
+str_2 db '1234ABCD4321',0xA
 str_2_size = $-str_2
 
 msg_1 db 'strings are equal', 0xA

@@ -5,7 +5,7 @@
 ; EDX = string length value
 ; None
 int_to_string:
-    xor   ebx, ebx        ; clear the ebx, I will use as counter for stack pushes
+    xor   ebx, ebx        ; clear the ebx, To be used as counter for stack pushes
 .push_chars:
     xor edx, edx          ; clear edx
     mov ecx, 10           ; ecx is divisor, devide by 10

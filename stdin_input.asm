@@ -16,6 +16,9 @@ start:
     mov     edx,input_length                      ; 1
     int     0x80
 
+    ;inc     [input]                              ; Get the code of next symbol in ABC
+
+    add     [input], 2
     mov     eax,4                                 ; System call 'write'
     mov     ebx,1                                 ; 'stdout'
     mov     ecx,response                          ; Address of message
@@ -34,7 +37,7 @@ start:
 
 segment readable writeable
     input           db '' ,0xA ; 0xA is ascii for line feed
-    input_length    db '2'
+    input_length    db 2
 
     message         db 'Please enter a char: ' 
     message_length  = $-message

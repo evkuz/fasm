@@ -34,13 +34,13 @@ str_len:
     cmp     byte [eax],0xA  ; '\n'
     jne     @b
     
-    sub     eax, dword msg2
+    sub     eax, dword msg2   ; Вычитаем из адреса, где символ '\n' адрес начала строки.
     
     
 ; Имеем на выходе: EAX - длина строки без учета завершающего
 ; нулевого байта, либо символа \n
     inc al
-    mov [msg2_sz], byte al
+    mov [msg2_sz], byte al ; Записали по адресу в msg2_sz число в al
     
 
  ;now reflect input 
@@ -55,7 +55,7 @@ str_len:
 	mov	eax,4
 	mov	ebx,1
 	mov	ecx,msg2
-	mov	edx,dword [msg2_sz]
+	mov	edx,dword [msg2_sz] ; вычисленная длина, а не 255 байт
 	int	0x80
 
 
