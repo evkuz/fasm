@@ -1,5 +1,5 @@
 
-; fasm demonstration of writing simple ELF executable
+; fasm demonstration of writing/using simple function
 
 format ELF executable 3
 entry start

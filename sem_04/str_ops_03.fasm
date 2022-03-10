@@ -1,5 +1,6 @@
 ; string copy simple
 ; Выводим разные размеры строки, поэтому переписываем edx новым значением размера
+; Обращаем внимание, что нет команды, где данные напрямую записываются str_out 
 ;
 format ELF executable 3
 entry start
@@ -8,18 +9,18 @@ segment readable executable
 
 start:
 
-call move_data
-call OP_1
-call print_source
+call move_data           ; Записали адреса строк в регистры esi/edi
+call OP_1                ; Переместили 4 байта (первые) из источника (адрес) - str_in в приемник (адрес) str_out через movsd
+call print_source        ; выводим строку str_in
 mov edx, sz_abc
-call print_out
+call print_out           ; выводим строку str_out
 
-call move_data
-call OP_2
+call move_data           ; Переписываем счетчики esi/edi на начало строк str_in/str_out
+call OP_2                ; Переместили 2 байта (первые) из источника (адрес) в приемник (адрес) через lodsw/stosw и EAX
 mov edx, 3
 call print_out
 
-call move_data
+call move_data           ; Переписываем счетчики esi/edi на начало строк str_in/str_out
 call OP_3
 mov edx, 7
 call print_out
@@ -35,27 +36,27 @@ mov edi, str_out        ; Адрес приемника - str_out
 ret
 
 OP_1:             ; переносим 4 байта напрямую
-movsd             ; Переместили 4 байта (первые) из источника в приемник
+movsd             ; Переместили 4 байта (первые) из источника (адрес) в приемник (адрес)
 mov eax, 0xA      ; Добавили \n 
-stosb             ; Добавили 1 байт из eax в конец строки ! (либо в начало,
+stosb             ; Добавили 1 байт из eax в конец строки из EDI ! (либо в начало,
                   ; в зависимости от флага DF). Точнее - куда указывает EDI
 ret
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 OP_2:             ; Переносим 2 байта через eax, Добавляем \n
-lodsw            ; Переместили 2 байта (первые) to eax
-stosw             ; Добавили 2 байта из eax в конец строки ! (либо в начало,
+lodsw             ; Переместили 2 байта (первые) to eax from address in esi
+stosw             ; Добавили 2 байта из eax в конец строки EDI ! (либо в начало,
                   ; в зависимости от флага DF). Точнее - куда указывает EDI
 mov eax, 0xA      ; Добавили \n в eax
-stosb             ; Добавили \n в строку
+stosb             ; Добавили \n в строку from EAX to EDI
 ret
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-OP_3:             ; Переносим 4 байта + 2 байта через eax
-lodsd       
-stos dword [es:edi]
+OP_3:               ; Переносим 4 байта + 2 байта через eax
+lodsd               ; Из ESI в EAX
+stos dword [es:edi] ; Из EAX в EDI
 
 
-lodsw
-stosw
+lodsw               ; Переносим СЛЕДУЮЩИЕ 2 байта из ESI в EAX
+stosw               ; Добавляем 2 байта из EAX в EDI
 
 mov eax, 0xA      ; Добавили \n в eax
 stosb             ; Добавили \n в строку

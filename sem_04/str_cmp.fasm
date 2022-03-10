@@ -13,8 +13,8 @@ segment readable executable
 
 start:
 
-	mov esi, str_1 + 4
-	mov edi, str_2 + 4
+	mov esi, str_1 ; + 4 
+	mov edi, str_2 ; + 4
 	;cmpsd  
     cmps dword [esi], dword [edi] ; Подсветка ???
     jne Not_equal
