@@ -70,9 +70,9 @@ result  dd 0     ; Указатель начала. Массив с элемен
 ;---------------------------------------------
 segment readable executable
 ;section '.code' code readable executable
-include '../include/int_2_str.inc'
-include '../include/str_2_int.inc'
-include '../include/arg_val.inc'
+include '%FASM_DIR%/include/int_2_str.inc'
+include '%FASM_DIR%/include/str_2_int.inc'
+include '%FASM_DIR%/include/arg_val.inc'
   start:
       push ebp
       mov  ebp, esp
