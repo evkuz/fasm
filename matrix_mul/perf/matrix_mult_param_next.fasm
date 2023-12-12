@@ -25,6 +25,8 @@
 ; 3000 x 1000 за 50 сек.
 
 
+
+
 format ELF executable 3
 entry start
 

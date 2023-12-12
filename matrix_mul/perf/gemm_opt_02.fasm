@@ -19,7 +19,13 @@
 ;
 ; ./matrix_mult_param_next 8000000 2000 1000 8000000 2000 - 20сек. в ЛИТ. Такое время уже можно оптимизировать.
 ; ./gemm_opt_02 8000000 2000 1000 8000000 2000            - 16 сек. в ЛИТ !!!
-
+;
+; ./matrix_mult_param_next 12000000 3000 1000 12000000 3000 - 25сек.
+; ./gemm_opt_02 12000000 3000 1000 12000000 3000            - 23сек.
+;
+; ./matrix_mult_param_next 24000000 3000 2000 24000000 3000 - 86сек.
+; ./gemm_opt_02 24000000 3000 2000 24000000 3000            - 73сек.
+; 13 секунд разницы - уже что-то !
 
 format ELF executable 3
 entry start
@@ -72,9 +78,9 @@ result  dd 0     ; Указатель начала. Массив с элемен
 ;---------------------------------------------
 segment readable executable
 ;section '.code' code readable executable
-include '/home/evkuz/asm/include/int_2_str.inc'
-include '/home/evkuz/asm/include/str_2_int.inc'
-include '/home/evkuz/asm/include/arg_val.inc'
+include '%FASM_DIR%/include/int_2_str.inc'
+include '%FASM_DIR%/include/str_2_int.inc'
+include '%FASM_DIR%/include/arg_val.inc'
   start:
       push ebp
       mov  ebp, esp
