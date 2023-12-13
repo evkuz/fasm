@@ -9,7 +9,7 @@ segment readable executable
 ;include '/home/evkuz/asm/int_2_str.inc'
   start:
   use64
-  ;mov ymm0, dword 0x12345vmulsd xmm0,xmm7,qword [esi]  ; multiply two 64-bit floats678
+  ;mov ymm0, dword 0x12345 vmulsd xmm0,xmm7,qword [esi]  ; multiply two 64-bit floats678
   extrq xmm0,8,7
   vmulsd xmm0,xmm7,qword [esi]  ; multiply two 64-bit floats
   vmovups [edi],ymm6        ; store unaligned 256-bit data

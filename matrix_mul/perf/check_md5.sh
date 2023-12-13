@@ -1,7 +1,7 @@
 #!/bin/bash
 
-FILE_1="data_C.bin" # Это эталонный файл
-FILE_2="data_C_gemm_01.bin" # Файл после оптимизации
+FILE_1="data_C_00.bin" # Это эталонный файл
+FILE_2="data_C.bin" # Файл после оптимизации
 
 do_mult="gemm_lods_02_4x5x3"
 do_mult_opt="gemm_lods_03_4x5x3"
@@ -11,7 +11,7 @@ do_mult_opt="gemm_lods_03_4x5x3"
 #mv $FILE_1 $FILE_2
 
 # Перемножаем
-./$do_mult_opt
+# ./$do_mult_opt
 #mv $FILE_1 $FILE_2
 
 md5_1=$(md5sum $FILE_1)
